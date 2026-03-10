@@ -24,9 +24,8 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
   }
 
   Future<void> _generateAISentence() async {
-    // 1. Check Internet Connection
-    var connectivityResult = await (Connectivity().checkConnectivity());
-    if (connectivityResult.contains(ConnectivityResult.none)) {
+    var check = await (Connectivity().checkConnectivity());
+    if (check.contains(ConnectivityResult.none)) {
       _showNoInternetDialog();
       return;
     }
@@ -36,9 +35,6 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final userLevel = prefs.getString('userLevel') ?? 'A1';
-
-      // NOTE: In a real scenario, the API key should be stored securely.
-      // For this task, I'll use a placeholder or assume it's pre-configured in the service.
       final aiService = AiPromptService(apiKey: 'YOUR_GEMINI_API_KEY_HERE');
       
       final result = await aiService.generateSentence(
@@ -51,38 +47,11 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
           aiSentence: result['sentence']!,
           aiSentenceTr: result['translation']!,
         );
-
-        // Save to SQLite
         await DatabaseHelper.instance.updateWord(updatedWord);
-
-        setState(() {
-          _currentWord = updatedWord;
-        });
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Cümle başarıyla oluşturuldu!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } else {
-        throw Exception('AI yanıt vermedi.');
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Hata: $e'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
+        setState(() => _currentWord = updatedWord);
       }
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -91,13 +60,9 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('İnternet Bağlantısı Gerekli'),
-        content: const Text(
-            'Yapay zeka ile cümle oluşturabilmek için aktif bir internet bağlantınızın olması gerekmektedir.'),
+        content: const Text('Yapay zeka ile cümle oluşturabilmek için aktif bir internet bağlantınızın olması gerekmektedir.'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Tamam'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Tamam')),
         ],
       ),
     );
@@ -120,7 +85,6 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Word Header
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
@@ -136,35 +100,14 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
               ),
               child: Column(
                 children: [
-                  Text(
-                    _currentWord.english,
-                    style: const TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
+                  Text(_currentWord.english, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
                   const SizedBox(height: 8),
-                  Text(
-                    _currentWord.turkish,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      color: Colors.white70,
-                    ),
-                  ),
+                  Text(_currentWord.turkish, style: const TextStyle(fontSize: 20, color: Colors.white70)),
                 ],
               ),
             ),
             const SizedBox(height: 32),
-
-            // AI Sentence Section
-            Text(
-              'Örnek Cümle (AI)',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white70,
-                  ),
-            ),
+            Text('Örnek Cümle (AI)', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: Colors.white70)),
             const SizedBox(height: 12),
             if (_currentWord.aiSentence.isNotEmpty) ...[
               _buildSentenceCard(_currentWord.aiSentence, _currentWord.aiSentenceTr),
@@ -186,11 +129,7 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
                   children: [
                     const Icon(Icons.auto_awesome, size: 48, color: Colors.blueAccent),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Henüz bir örnek cümle oluşturulmamış.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white54),
-                    ),
+                    const Text('Henüz bir örnek cümle oluşturulmamış.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white54)),
                     const SizedBox(height: 24),
                     _isLoading
                         ? const CircularProgressIndicator()
@@ -198,9 +137,6 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
                             onPressed: _generateAISentence,
                             icon: const Icon(Icons.auto_awesome),
                             label: const Text('Örnek Cümle Oluştur'),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                            ),
                           ),
                   ],
                 ),
@@ -229,25 +165,9 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            sentence,
-            style: const TextStyle(
-              fontSize: 18,
-              fontStyle: FontStyle.italic,
-              color: Colors.white,
-            ),
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Divider(color: Colors.white10),
-          ),
-          Text(
-            translation,
-            style: TextStyle(
-              fontSize: 16,
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.8),
-            ),
-          ),
+          Text(sentence, style: const TextStyle(fontSize: 18, fontStyle: FontStyle.italic, color: Colors.white)),
+          const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Divider(color: Colors.white10)),
+          Text(translation, style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.primary.withOpacity(0.8))),
         ],
       ),
     );
@@ -260,10 +180,7 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
         title: const Text('Kelimeyi Sil'),
         content: Text('${_currentWord.english} kelimesini silmek istediğinize emin misiniz?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('İptal'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('İptal')),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Sil', style: TextStyle(color: Colors.redAccent)),

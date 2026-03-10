@@ -113,77 +113,87 @@ class _VoiceShadowingScreenState extends State<VoiceShadowingScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Voice Shadowing')),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            const Text(
-              'Dinle ve Tekrar Et',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white38),
-            ),
-            const SizedBox(height: 32),
-            Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.white10),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Text(
+                'Dinle ve Tekrar Et',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white38),
               ),
-              child: Column(
-                children: [
-                  Text(
-                    currentWord.english,
-                    style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    currentWord.turkish,
-                    style: const TextStyle(fontSize: 18, color: Colors.white54),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 32),
-            IconButton(
-              iconSize: 64,
-              onPressed: _speak,
-              icon: const Icon(Icons.volume_up, color: Colors.blueAccent),
-            ),
-            const Spacer(),
-            if (_lastFeedback != null)
+              const SizedBox(height: 32),
               Container(
-                margin: const EdgeInsets.only(bottom: 24),
-                padding: const EdgeInsets.all(16),
+                width: double.infinity,
+                padding: const EdgeInsets.all(32),
                 decoration: BoxDecoration(
-                  color: _lastFeedback!.contains('Harika') ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Colors.white10),
                 ),
-                child: Text(_lastFeedback!, textAlign: TextAlign.center),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      currentWord.english,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      currentWord.turkish,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 18, color: Colors.white54),
+                    ),
+                  ],
+                ),
               ),
-            Text(
-              _isListening ? 'Dinleniyor...' : (_text.isNotEmpty ? 'Duyulan: $_text' : 'Hazır mısın?'),
-              style: const TextStyle(fontSize: 18, fontStyle: FontStyle.italic),
-            ),
-            const SizedBox(height: 24),
-            GestureDetector(
-              onTapDown: (_) => _listen(),
-              onTapUp: (_) => _listen(),
-              child: CircleAvatar(
-                radius: 40,
-                backgroundColor: _isListening ? Colors.red : Colors.deepPurple,
-                child: Icon(_isListening ? Icons.mic : Icons.mic_none, color: Colors.white, size: 40),
+              const SizedBox(height: 32),
+              IconButton(
+                iconSize: 64,
+                onPressed: _speak,
+                icon: const Icon(Icons.volume_up, color: Colors.blueAccent),
               ),
-            ),
-            const SizedBox(height: 12),
-            const Text('Basılı tutarak konuşun', style: TextStyle(color: Colors.white24, fontSize: 12)),
-            const SizedBox(height: 32),
-            if (_lastFeedback != null)
-              ElevatedButton(
-                onPressed: _nextWord,
-                style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 56)),
-                child: Text(_currentIndex < _words.length - 1 ? 'SIRADAKİ KELİME' : 'TAMAMLA'),
+              const SizedBox(height: 48),
+              if (_lastFeedback != null)
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 24),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: _lastFeedback!.contains('Harika') ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(_lastFeedback!, textAlign: TextAlign.center),
+                ),
+              Text(
+                _isListening ? 'Dinleniyor...' : (_text.isNotEmpty ? 'Duyulan: $_text' : 'Hazır mısın?'),
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 18, fontStyle: FontStyle.italic),
               ),
-          ],
+              const SizedBox(height: 24),
+              GestureDetector(
+                onTapDown: (_) => _listen(),
+                onTapUp: (_) => _listen(),
+                child: CircleAvatar(
+                  radius: 40,
+                  backgroundColor: _isListening ? Colors.red : Colors.deepPurple,
+                  child: Icon(_isListening ? Icons.mic : Icons.mic_none, color: Colors.white, size: 40),
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text('Basılı tutarak konuşun', style: TextStyle(color: Colors.white24, fontSize: 12)),
+              const SizedBox(height: 32),
+              if (_lastFeedback != null)
+                ElevatedButton(
+                  onPressed: _nextWord,
+                  style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 56)),
+                  child: Text(_currentIndex < _words.length - 1 ? 'SIRADAKİ KELİME' : 'TAMAMLA'),
+                ),
+            ],
+          ),
         ),
       ),
     );
