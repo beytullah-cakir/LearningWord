@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_slidable/flutter_slidable.dart';
 import '../../core/database/database_helper.dart';
 import '../../models/word_model.dart';
+import 'word_details_screen.dart';
 
 class WordsListScreen extends StatefulWidget {
   const WordsListScreen({super.key});
@@ -49,72 +49,6 @@ class _WordsListScreenState extends State<WordsListScreen> {
     }
   }
 
-  void _showWordDetails(Word word) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                word.english,
-                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.white),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                word.turkish,
-                style: TextStyle(fontSize: 20, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 20),
-                child: Divider(color: Colors.white10),
-              ),
-              const Text(
-                'AI Örnek Cümle',
-                style: TextStyle(color: Colors.white54, fontSize: 14, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Text(
-                  word.aiSentence.isNotEmpty ? word.aiSentence : 'Henüz cümle oluşturulmadı.',
-                  style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Colors.white70),
-                ),
-              ),
-              if (word.aiSentenceTr.isNotEmpty) ...[
-                 const SizedBox(height: 8),
-                 Text(
-                  word.aiSentenceTr,
-                  style: const TextStyle(fontSize: 14, color: Colors.white38),
-                ),
-              ],
-              const SizedBox(height: 32),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-                child: const Text('Kapat', style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   void _editWord(Word word) async {
     final englishController = TextEditingController(text: word.english);
     final turkishController = TextEditingController(text: word.turkish);
@@ -122,42 +56,35 @@ class _WordsListScreenState extends State<WordsListScreen> {
     await showDialog(
       context: context,
       builder: (context) => Dialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(28.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
+              Text(
                 'Kelimeyi Düzenle',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.blueGrey.shade900,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
-              TextField(
+              _buildModernTextField(
                 controller: englishController,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  labelText: 'İngilizce',
-                  labelStyle: const TextStyle(color: Colors.white38),
-                  filled: true,
-                  fillColor: Colors.white.withOpacity(0.05),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                ),
+                label: 'İngilizce',
+                icon: Icons.language_rounded,
               ),
               const SizedBox(height: 16),
-              TextField(
+              _buildModernTextField(
                 controller: turkishController,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  labelText: 'Türkçe',
-                  labelStyle: const TextStyle(color: Colors.white38),
-                  filled: true,
-                  fillColor: Colors.white.withOpacity(0.05),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                ),
+                label: 'Türkçe',
+                icon: Icons.translate_rounded,
               ),
               const SizedBox(height: 32),
               Row(
@@ -165,10 +92,14 @@ class _WordsListScreenState extends State<WordsListScreen> {
                   Expanded(
                     child: TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('İptal', style: TextStyle(color: Colors.white38)),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        foregroundColor: Colors.grey.shade600,
+                      ),
+                      child: const Text('İptal', style: TextStyle(fontWeight: FontWeight.w600)),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () async {
@@ -184,8 +115,9 @@ class _WordsListScreenState extends State<WordsListScreen> {
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        elevation: 4,
+                        shadowColor: Theme.of(context).colorScheme.primary.withOpacity(0.4),
                       ),
                       child: const Text('Kaydet', style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
@@ -199,21 +131,98 @@ class _WordsListScreenState extends State<WordsListScreen> {
     );
   }
 
+  Widget _buildModernTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+  }) {
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, size: 20, color: const Color(0xFF6366F1)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.grey.shade200),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.grey.shade200),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFF6366F1), width: 2),
+        ),
+        filled: true,
+        fillColor: Colors.grey.shade50,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FE),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 24),
-              const Text(
-                'Kelimelerim',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+              const SizedBox(height: 32),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Kelimelerim',
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.blueGrey.shade900,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      Text(
+                        'Öğrendiğin tüm kelimeler burada',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade500,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 24),
+              // Search Bar
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Kelime ara...',
+                    hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 15),
+                    prefixIcon: Icon(Icons.search_rounded, color: Colors.grey.shade400),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
               Expanded(
                 child: FutureBuilder<List<Word>>(
                   future: _wordsFuture,
@@ -225,58 +234,124 @@ class _WordsListScreenState extends State<WordsListScreen> {
                     final words = snapshot.data ?? [];
 
                     if (words.isEmpty) {
-                      return const Center(
-                        child: Text('Henüz kelime eklemedin.', style: TextStyle(color: Colors.white38)),
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.auto_stories_rounded, size: 80, color: Colors.grey.shade300),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Henüz kelime eklenmemiş.',
+                              style: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.w500),
+                            ),
+                          ],
+                        ),
                       );
                     }
 
-                    return ListView.builder(
+                    return GridView.builder(
                       itemCount: words.length,
                       padding: const EdgeInsets.only(bottom: 100),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                        childAspectRatio: 0.85,
+                      ),
                       itemBuilder: (context, index) {
                         final word = words[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: Slidable(
-                            key: ValueKey(word.id),
-                            endActionPane: ActionPane(
-                              motion: const DrawerMotion(),
-                              extentRatio: 0.45,
-                              children: [
-                                SlidableAction(
-                                  onPressed: (_) => _editWord(word),
-                                  backgroundColor: Colors.blueAccent.withOpacity(0.1),
-                                  foregroundColor: Colors.blueAccent,
-                                  icon: Icons.edit_rounded,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                SlidableAction(
-                                  onPressed: (_) => _deleteWord(word),
-                                  backgroundColor: Colors.redAccent.withOpacity(0.1),
-                                  foregroundColor: Colors.redAccent,
-                                  icon: Icons.delete_rounded,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                              ],
-                            ),
-                            child: Card(
-                              margin: EdgeInsets.zero,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                              child: ListTile(
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                                title: Text(
-                                  word.english,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                                ),
-                                subtitle: Text(
-                                  word.turkish,
-                                  style: const TextStyle(color: Colors.white54),
-                                ),
-                                trailing: word.aiSentence.isNotEmpty
-                                    ? Icon(Icons.auto_awesome, color: Theme.of(context).colorScheme.primary, size: 20)
-                                    : null,
-                                onTap: () => _showWordDetails(word),
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(28),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF6366F1).withOpacity(0.08),
+                                blurRadius: 24,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () async {
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => WordDetailsScreen(word: word),
+                                  ),
+                                );
+                                _refreshWords();
+                              },
+                              borderRadius: BorderRadius.circular(28),
+                              child: Stack(
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.all(20.0),
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF6366F1).withOpacity(0.05),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.translate_rounded,
+                                            color: Color(0xFF6366F1),
+                                            size: 24,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 16),
+                                        Text(
+                                          word.english,
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w800,
+                                            color: Colors.blueGrey.shade900,
+                                            letterSpacing: -0.2,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          word.turkish,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.grey.shade500,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 12,
+                                    right: 12,
+                                    child: Row(
+                                      children: [
+                                        _buildCircularButton(
+                                          icon: Icons.edit_rounded,
+                                          color: Colors.blue.shade400,
+                                          onPressed: () => _editWord(word),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        _buildCircularButton(
+                                          icon: Icons.delete_outline_rounded,
+                                          color: Colors.red.shade400,
+                                          onPressed: () => _deleteWord(word),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -289,6 +364,24 @@ class _WordsListScreenState extends State<WordsListScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildCircularButton({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, size: 14, color: color),
       ),
     );
   }

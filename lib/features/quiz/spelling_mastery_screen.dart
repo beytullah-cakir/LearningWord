@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import '../../core/database/database_helper.dart';
 import '../../models/word_model.dart';
+import '../../core/localization/app_translation.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 class SpellingMasteryScreen extends StatefulWidget {
   const SpellingMasteryScreen({super.key});
@@ -12,6 +14,7 @@ class SpellingMasteryScreen extends StatefulWidget {
 
 class _SpellingMasteryScreenState extends State<SpellingMasteryScreen> {
   final FlutterTts _flutterTts = FlutterTts();
+  final AudioPlayer _audioPlayer = AudioPlayer();
   final TextEditingController _controller = TextEditingController();
   List<Word> _words = [];
   int _currentIndex = 0;
@@ -19,11 +22,25 @@ class _SpellingMasteryScreenState extends State<SpellingMasteryScreen> {
   bool _isFinished = false;
   int _score = 0;
   bool _hasChecked = false;
+  bool _isCorrect = false;
+  final translation = LanguageManager();
 
   @override
   void initState() {
     super.initState();
     _loadWords();
+    translation.addListener(_onLanguageChange);
+  }
+
+  @override
+  void dispose() {
+    translation.removeListener(_onLanguageChange);
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  void _onLanguageChange() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _loadWords() async {
@@ -50,12 +67,16 @@ class _SpellingMasteryScreenState extends State<SpellingMasteryScreen> {
     if (_hasChecked) return;
     
     final answer = _controller.text.trim().toLowerCase();
-    final correctAnswer = _words[_currentIndex].english.toLowerCase();
+    final correctAnswer = _words[_currentIndex].english.trim().toLowerCase();
 
     setState(() {
       _hasChecked = true;
-      if (answer == correctAnswer) {
+      _isCorrect = answer == correctAnswer;
+      if (_isCorrect) {
         _score++;
+        _audioPlayer.play(AssetSource('sounds/success.mp3'));
+      } else {
+        _audioPlayer.play(AssetSource('sounds/fail.mp3'));
       }
     });
   }
@@ -66,6 +87,7 @@ class _SpellingMasteryScreenState extends State<SpellingMasteryScreen> {
         _currentIndex++;
         _controller.clear();
         _hasChecked = false;
+        _isCorrect = false;
       });
     } else {
       setState(() => _isFinished = true);
@@ -81,7 +103,8 @@ class _SpellingMasteryScreenState extends State<SpellingMasteryScreen> {
     final currentWord = _words[_currentIndex];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Spelling Mastery')),
+      backgroundColor: const Color(0xFF121212),
+      appBar: AppBar(title: Text(translation.tr('spelling'))),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -93,9 +116,9 @@ class _SpellingMasteryScreenState extends State<SpellingMasteryScreen> {
             ),
             const SizedBox(height: 32),
             Text(
-              'Kelimeyi yazın:',
+              translation.tr('write_the_word'),
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleLarge,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white),
             ),
             const SizedBox(height: 8),
             Text(
@@ -108,12 +131,16 @@ class _SpellingMasteryScreenState extends State<SpellingMasteryScreen> {
               onPressed: _speak,
               icon: const Icon(Icons.volume_up, size: 48, color: Colors.orangeAccent),
             ),
-            const Text('Dinlemek için dokunun', textAlign: TextAlign.center, style: TextStyle(color: Colors.white38)),
+            Text(translation.tr('tap_to_listen'), textAlign: TextAlign.center, style: const TextStyle(color: Colors.white38)),
             const SizedBox(height: 32),
             TextField(
               controller: _controller,
+              style: const TextStyle(color: Colors.white),
+              textCapitalization: TextCapitalization.none,
+              autocorrect: false,
               decoration: InputDecoration(
-                hintText: 'İngilizce karşılığını yazın...',
+                hintText: translation.tr('hint_write_english'),
+                hintStyle: const TextStyle(color: Colors.white24),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
               ),
               onSubmitted: (_) => _checkAnswer(),
@@ -126,35 +153,33 @@ class _SpellingMasteryScreenState extends State<SpellingMasteryScreen> {
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.all(16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white,
                 ),
-                child: const Text('KONTROL ET'),
+                child: Text(translation.tr('check')),
               )
             else ...[
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: _controller.text.trim().toLowerCase() == currentWord.english.toLowerCase()
+                  color: _isCorrect
                       ? Colors.green.withOpacity(0.1)
                       : Colors.red.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: _controller.text.trim().toLowerCase() == currentWord.english.toLowerCase()
-                        ? Colors.green
-                        : Colors.red,
+                    color: _isCorrect ? Colors.green : Colors.red,
                   ),
                 ),
                 child: Column(
                   children: [
                     Text(
-                      _controller.text.trim().toLowerCase() == currentWord.english.toLowerCase()
-                          ? 'Mükemmel!'
-                          : 'Hata! Doğru cevap: ${currentWord.english}',
+                      _isCorrect
+                          ? translation.tr('perfect')
+                          : '${translation.tr('error_correct_answer')} ${currentWord.english}',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: _controller.text.trim().toLowerCase() == currentWord.english.toLowerCase()
-                            ? Colors.green
-                            : Colors.red,
+                        color: _isCorrect ? Colors.green : Colors.red,
                       ),
                     ),
                   ],
@@ -169,7 +194,7 @@ class _SpellingMasteryScreenState extends State<SpellingMasteryScreen> {
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Colors.white,
                 ),
-                child: Text(_currentIndex < _words.length - 1 ? 'SIRADAKİ' : 'SONUÇLARI GÖR'),
+                child: Text(_currentIndex < _words.length - 1 ? translation.tr('next') : translation.tr('see_results')),
               ),
             ],
           ],
@@ -180,15 +205,17 @@ class _SpellingMasteryScreenState extends State<SpellingMasteryScreen> {
 
   Widget _buildEmptyState() {
     return Scaffold(
-      appBar: AppBar(title: const Text('Spelling Mastery')),
+      backgroundColor: const Color(0xFF121212),
+      appBar: AppBar(title: Text(translation.tr('spelling'))),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(Icons.warning, size: 64, color: Colors.orange),
             const SizedBox(height: 16),
-            const Text('Henüz kelime eklenmemiş!'),
-            ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text('Geri Dön')),
+            Text(translation.tr('no_words'), style: const TextStyle(color: Colors.white)),
+            const SizedBox(height: 16),
+            ElevatedButton(onPressed: () => Navigator.pop(context), child: Text(translation.tr('back'))),
           ],
         ),
       ),
@@ -197,6 +224,7 @@ class _SpellingMasteryScreenState extends State<SpellingMasteryScreen> {
 
   Widget _buildResultState() {
     return Scaffold(
+      backgroundColor: const Color(0xFF121212),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -205,14 +233,18 @@ class _SpellingMasteryScreenState extends State<SpellingMasteryScreen> {
             children: [
               const Icon(Icons.stars, size: 80, color: Colors.amber),
               const SizedBox(height: 24),
-              const Text('Tebrikler!', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+              Text(translation.tr('congrats'), style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
               const SizedBox(height: 16),
-              Text('Skorun: $_score / ${_words.length}', style: const TextStyle(fontSize: 24)),
+              Text('${translation.tr('your_score')}: $_score / ${_words.length}', style: const TextStyle(fontSize: 24, color: Colors.white70)),
               const SizedBox(height: 48),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 56)),
-                child: const Text('Devam Et'),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 56),
+                  backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white,
+                ),
+                child: Text(translation.tr('continue')),
               ),
             ],
           ),

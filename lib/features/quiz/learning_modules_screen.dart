@@ -2,16 +2,41 @@ import 'package:flutter/material.dart';
 import 'spelling_mastery_screen.dart';
 import 'speed_match_screen.dart';
 import 'voice_shadowing_screen.dart';
-import 'quiz_screen.dart'; // This is the original multiple choice quiz
+import 'quiz_screen.dart';
+import '../../core/localization/app_translation.dart';
 
-class LearningModulesScreen extends StatelessWidget {
+class LearningModulesScreen extends StatefulWidget {
   const LearningModulesScreen({super.key});
+
+  @override
+  State<LearningModulesScreen> createState() => _LearningModulesScreenState();
+}
+
+class _LearningModulesScreenState extends State<LearningModulesScreen> {
+  final translation = LanguageManager();
+
+  @override
+  void initState() {
+    super.initState();
+    translation.addListener(_onLanguageChange);
+  }
+
+  @override
+  void dispose() {
+    translation.removeListener(_onLanguageChange);
+    super.dispose();
+  }
+
+  void _onLanguageChange() {
+    if (mounted) setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
-        title: const Text('Öğrenme Modülleri', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(translation.tr('learning_modules'), style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: GridView.count(
         padding: const EdgeInsets.all(24),
@@ -21,32 +46,32 @@ class LearningModulesScreen extends StatelessWidget {
         children: [
           _buildModuleCard(
             context,
-            title: 'Spelling Mastery',
-            subtitle: 'Yazma yeteneğini geliştir',
+            title: translation.tr('spelling'),
+            subtitle: translation.tr('spelling_subtitle'),
             icon: Icons.edit_note,
             color: Colors.blueAccent,
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SpellingMasteryScreen())),
           ),
           _buildModuleCard(
             context,
-            title: 'Speed Match',
-            subtitle: 'Zamana karşı eşleştir',
+            title: translation.tr('speed_match'),
+            subtitle: translation.tr('speed_match_subtitle'),
             icon: Icons.bolt,
             color: Colors.orangeAccent,
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SpeedMatchScreen())),
           ),
           _buildModuleCard(
             context,
-            title: 'Voice Shadowing',
-            subtitle: 'Telaffuzunu puanla',
+            title: translation.tr('voice_shadowing'),
+            subtitle: translation.tr('voice_subtitle'),
             icon: Icons.record_voice_over,
             color: Colors.pinkAccent,
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const VoiceShadowingScreen())),
           ),
           _buildModuleCard(
             context,
-            title: 'Multiple Choice',
-            subtitle: 'Klasik test modu',
+            title: translation.tr('multiple_choice'),
+            subtitle: translation.tr('quiz_subtitle'),
             icon: Icons.quiz,
             color: Colors.tealAccent,
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const QuizScreen())),
@@ -64,6 +89,11 @@ class LearningModulesScreen extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     return Card(
+      color: Colors.white.withOpacity(0.05),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: Colors.white10),
+      ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
@@ -85,7 +115,7 @@ class LearningModulesScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                     Text(subtitle, style: const TextStyle(color: Colors.white54, fontSize: 13)),
                   ],
                 ),

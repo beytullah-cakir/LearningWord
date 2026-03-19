@@ -3,6 +3,8 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../../core/database/database_helper.dart';
 import '../../models/word_model.dart';
+import '../../core/localization/app_translation.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 class VoiceShadowingScreen extends StatefulWidget {
   const VoiceShadowingScreen({super.key});
@@ -22,12 +24,26 @@ class _VoiceShadowingScreenState extends State<VoiceShadowingScreen> {
   int _currentIndex = 0;
   bool _isLoading = true;
   String? _lastFeedback;
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  final translation = LanguageManager();
 
   @override
   void initState() {
     super.initState();
     _speech = stt.SpeechToText();
     _loadWords();
+    translation.addListener(_onLanguageChange);
+  }
+
+  @override
+  void dispose() {
+    translation.removeListener(_onLanguageChange);
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  void _onLanguageChange() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _loadWords() async {
@@ -78,15 +94,17 @@ class _VoiceShadowingScreenState extends State<VoiceShadowingScreen> {
 
     if (recognized.contains(correct) || correct.contains(recognized) && recognized.length > 2) {
       setState(() {
-        _lastFeedback = "Harika! Doğru telaffuz ettin. (Puan: ${(_confidence * 100).toInt()})";
+        _lastFeedback = "${translation.tr('excellent_pronunciation')} (${translation.tr('score')}: ${(_confidence * 100).toInt()})";
+        _audioPlayer.play(AssetSource('sounds/success.mp3'));
       });
     } else if (recognized.isEmpty) {
       setState(() {
-        _lastFeedback = "Bir şey duyamadım, tekrar deneyin.";
+        _lastFeedback = translation.tr('could_not_hear');
       });
     } else {
       setState(() {
-        _lastFeedback = "Biraz daha çalışmalısın. Şunu duydum: '$recognized'";
+        _lastFeedback = "${translation.tr('try_a_bit_more')} '$recognized'";
+        _audioPlayer.play(AssetSource('sounds/fail.mp3'));
       });
     }
   }
@@ -112,7 +130,8 @@ class _VoiceShadowingScreenState extends State<VoiceShadowingScreen> {
     final currentWord = _words[_currentIndex];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Voice Shadowing')),
+      backgroundColor: const Color(0xFF121212),
+      appBar: AppBar(title: Text(translation.tr('voice_shadowing'))),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -120,9 +139,9 @@ class _VoiceShadowingScreenState extends State<VoiceShadowingScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Text(
-                'Dinle ve Tekrar Et',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white38),
+              Text(
+                translation.tr('listen_and_repeat'),
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white38),
               ),
               const SizedBox(height: 32),
               Container(
@@ -139,7 +158,7 @@ class _VoiceShadowingScreenState extends State<VoiceShadowingScreen> {
                     Text(
                       currentWord.english,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
+                      style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -163,15 +182,17 @@ class _VoiceShadowingScreenState extends State<VoiceShadowingScreen> {
                   margin: const EdgeInsets.only(bottom: 24),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: _lastFeedback!.contains('Harika') ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+                    color: _lastFeedback!.contains(translation.tr('excellent_pronunciation')) || _lastFeedback!.contains('Harika') || _lastFeedback!.contains('Great') 
+                        ? Colors.green.withOpacity(0.1) 
+                        : Colors.orange.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Text(_lastFeedback!, textAlign: TextAlign.center),
+                  child: Text(_lastFeedback!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white)),
                 ),
               Text(
-                _isListening ? 'Dinleniyor...' : (_text.isNotEmpty ? 'Duyulan: $_text' : 'Hazır mısın?'),
+                _isListening ? translation.tr('listening') : (_text.isNotEmpty ? '${translation.tr('heard')}: $_text' : translation.tr('ready_to_start')),
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 18, fontStyle: FontStyle.italic),
+                style: const TextStyle(fontSize: 18, fontStyle: FontStyle.italic, color: Colors.white),
               ),
               const SizedBox(height: 24),
               GestureDetector(
@@ -184,13 +205,17 @@ class _VoiceShadowingScreenState extends State<VoiceShadowingScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              const Text('Basılı tutarak konuşun', style: TextStyle(color: Colors.white24, fontSize: 12)),
+              Text(translation.tr('hold_to_speak'), style: const TextStyle(color: Colors.white24, fontSize: 12)),
               const SizedBox(height: 32),
               if (_lastFeedback != null)
                 ElevatedButton(
                   onPressed: _nextWord,
-                  style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 56)),
-                  child: Text(_currentIndex < _words.length - 1 ? 'SIRADAKİ KELİME' : 'TAMAMLA'),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 56),
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: Text(_currentIndex < _words.length - 1 ? translation.tr('next_word') : translation.tr('complete')),
                 ),
             ],
           ),
@@ -201,15 +226,17 @@ class _VoiceShadowingScreenState extends State<VoiceShadowingScreen> {
 
   Widget _buildEmptyState() {
      return Scaffold(
-      appBar: AppBar(title: const Text('Voice Shadowing')),
+      backgroundColor: const Color(0xFF121212),
+      appBar: AppBar(title: Text(translation.tr('voice_shadowing'))),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(Icons.warning, size: 64, color: Colors.orange),
             const SizedBox(height: 16),
-            const Text('Henüz kelime eklenmemiş!'),
-            ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text('Geri Dön')),
+            Text(translation.tr('no_words'), style: const TextStyle(color: Colors.white)),
+            const SizedBox(height: 16),
+            ElevatedButton(onPressed: () => Navigator.pop(context), child: Text(translation.tr('back'))),
           ],
         ),
       ),

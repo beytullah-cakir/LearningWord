@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../home/home_screen.dart';
+import '../../core/localization/app_translation.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -13,8 +14,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPageIndex = 0;
   String? _selectedLevel;
+  final translation = LanguageManager();
 
   final List<String> _levels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+
+  @override
+  void initState() {
+    super.initState();
+    translation.addListener(_onLanguageChange);
+  }
+
+  @override
+  void dispose() {
+    translation.removeListener(_onLanguageChange);
+    super.dispose();
+  }
+
+  void _onLanguageChange() {
+    if (mounted) setState(() {});
+  }
 
   void _onNext() {
     if (_currentPageIndex < 2) {
@@ -30,7 +48,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _completeOnboarding() async {
     if (_selectedLevel == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Lütfen bir İngilizce seviyesi seçin.')),
+        SnackBar(content: Text(translation.tr('please_select_level'))),
       );
       return;
     }
@@ -48,6 +66,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FE),
       body: SafeArea(
         child: Column(
           children: [
@@ -60,15 +79,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   });
                 },
                 children: [
-                   _buildPage(
-                    title: 'VocabFlow AI\'ya Hoş Geldin!',
-                    description: 'Kendi kelime hazneni oluştur, AI destekli örnek cümlelerle İngilizcenı geliştir.',
-                    icon: Icons.auto_awesome,
+                  _buildPage(
+                    title: translation.tr('welcome'),
+                    description: translation.tr('welcome_desc'),
+                    icon: Icons.auto_awesome_rounded,
+                    color: const Color(0xFF6366F1),
                   ),
                   _buildPage(
-                    title: 'Akıllı Öğrenme Modları',
-                    description: 'Flashcardlar ve dinamik testler ile her yerde kelime öğrenmeye devam et.',
-                    icon: Icons.school,
+                    title: translation.tr('smart_learning'),
+                    description: translation.tr('smart_learning_desc'),
+                    icon: Icons.school_rounded,
+                    color: const Color(0xFF8B5CF6),
                   ),
                   _buildLevelSelectionPage(),
                 ],
@@ -81,23 +102,45 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  Widget _buildPage({required String title, required String description, required IconData icon}) {
+  Widget _buildPage({
+    required String title,
+    required String description,
+    required IconData icon,
+    required Color color,
+  }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32.0),
+      padding: const EdgeInsets.symmetric(horizontal: 40.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 120, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(height: 48),
+          Container(
+            padding: const EdgeInsets.all(40),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.05),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 100, color: color),
+          ),
+          const SizedBox(height: 60),
           Text(
             title,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.w900,
+              color: Colors.blueGrey.shade900,
+              letterSpacing: -1,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
           Text(
             description,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white70),
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.blueGrey.shade400,
+              fontWeight: FontWeight.w500,
+              height: 1.5,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -111,42 +154,79 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.language, size: 100, color: Colors.deepPurpleAccent),
-          const SizedBox(height: 32),
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: const Color(0xFF6366F1).withOpacity(0.05),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.language_rounded, size: 60, color: Color(0xFF6366F1)),
+          ),
+          const SizedBox(height: 40),
           Text(
-            'İngilizce Seviyeni Seç',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            translation.tr('select_level'),
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.w900,
+              color: Colors.blueGrey.shade900,
+              letterSpacing: -1,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
           Text(
-            'Sana uygun örnek cümleler üretebilmemiz için önemlidir.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white70),
+            translation.tr('level_desc'),
+            style: TextStyle(
+              fontSize: 15,
+              color: Colors.blueGrey.shade400,
+              fontWeight: FontWeight.w500,
+            ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 32),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            alignment: WrapAlignment.center,
-            children: _levels.map((level) {
+          const SizedBox(height: 48),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _levels.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 1.2,
+            ),
+            itemBuilder: (context, index) {
+              final level = _levels[index];
               final isSelected = _selectedLevel == level;
-              return ChoiceChip(
-                label: Text(level),
-                selected: isSelected,
-                selectedColor: Theme.of(context).colorScheme.primary,
-                onSelected: (selected) {
-                  setState(() {
-                     _selectedLevel = selected ? level : null;
-                  });
-                },
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                labelStyle: TextStyle(
-                  color: isSelected ? Colors.white : Colors.white70,
-                  fontWeight: FontWeight.bold,
+              return GestureDetector(
+                onTap: () => setState(() => _selectedLevel = level),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  decoration: BoxDecoration(
+                    color: isSelected ? const Color(0xFF6366F1) : Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: isSelected ? const Color(0xFF6366F1).withOpacity(0.3) : Colors.black.withOpacity(0.03),
+                        blurRadius: 15,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                    border: Border.all(
+                      color: isSelected ? const Color(0xFF6366F1) : Colors.grey.shade100,
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    level,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: isSelected ? Colors.white : Colors.blueGrey.shade700,
+                    ),
+                  ),
                 ),
               );
-            }).toList(),
+            },
           ),
         ],
       ),
@@ -155,43 +235,47 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Widget _buildBottomControls() {
     return Padding(
-      padding: const EdgeInsets.all(32.0),
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 48),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-           Row(
+          Row(
             children: List.generate(3, (index) {
-              return Container(
+              final isActive = _currentPageIndex == index;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
                 margin: const EdgeInsets.only(right: 8),
-                width: 10,
-                height: _currentPageIndex == index ? 10 : 8,
+                width: isActive ? 24 : 10,
+                height: 10,
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _currentPageIndex == index
-                       ? Theme.of(context).colorScheme.primary
-                       : Colors.white24,
+                  borderRadius: BorderRadius.circular(5),
+                  color: isActive ? const Color(0xFF6366F1) : Colors.blueGrey.shade100,
                 ),
               );
             }),
           ),
           ElevatedButton(
             onPressed: () {
-               if (_currentPageIndex == 2 && _selectedLevel == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Lütfen devam etmek için bir seviye seçin.')),
-                  );
-                  return;
-               }
-               _onNext();
+              if (_currentPageIndex == 2 && _selectedLevel == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(translation.tr('select_level_to_continue')),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+                return;
+              }
+              _onNext();
             },
             style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+              backgroundColor: const Color(0xFF6366F1),
+              shadowColor: const Color(0xFF6366F1).withOpacity(0.4),
+              elevation: 4,
             ),
             child: Text(
-              _currentPageIndex == 2 ? 'Başla' : 'İleri',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+              _currentPageIndex == 2 ? translation.tr('start') : translation.tr('next_btn'),
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
             ),
           )
         ],
@@ -199,3 +283,4 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 }
+

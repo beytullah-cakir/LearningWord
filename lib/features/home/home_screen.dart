@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import '../words/add_word_screen.dart';
 import '../words/words_list_screen.dart';
+import '../../core/database/database_helper.dart';
+import '../../models/word_model.dart';
 import '../flashcards/flashcards_screen.dart';
 import '../quiz/spelling_mastery_screen.dart';
 import '../quiz/speed_match_screen.dart';
 import '../quiz/voice_shadowing_screen.dart';
 import '../quiz/quiz_screen.dart';
+import '../../core/localization/app_translation.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,93 +18,328 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
-
-  final List<Widget> _pages = [
-    const _ExerciseTab(),
-    const AddWordScreen(),
-    const WordsListScreen(),
-  ];
+  final translation = LanguageManager();
 
   @override
   void initState() {
     super.initState();
+    translation.addListener(_onLanguageChange);
+  }
+
+  @override
+  void dispose() {
+    translation.removeListener(_onLanguageChange);
+    super.dispose();
+  }
+
+  void _onLanguageChange() {
+    if (mounted) setState(() {});
+  }
+
+  List<Widget> get _pages => [const _ExerciseTab(), const WordsListScreen()];
+
+  void _showAddWordDialog() {
+    final formKey = GlobalKey<FormState>();
+    final englishController = TextEditingController();
+    final turkishController = TextEditingController();
+    bool isLoading = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => Container(
+          padding: EdgeInsets.only(
+            left: 28,
+            right: 28,
+            top: 12,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 28,
+          ),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(40)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 44,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(2.5),
+                ),
+              ),
+              const SizedBox(height: 32),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.add_circle_rounded,
+                      color: Theme.of(context).colorScheme.primary,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Text(
+                    translation.tr('add_new_word'),
+                    style: TextStyle(
+                      color: Colors.blueGrey.shade900,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
+              Form(
+                key: formKey,
+                child: Column(
+                  children: [
+                    _buildModernTextField(
+                      controller: englishController,
+                      label: translation.tr('english_word'),
+                      icon: Icons.language_rounded,
+                      autofocus: true,
+                    ),
+                    const SizedBox(height: 20),
+                    _buildModernTextField(
+                      controller: turkishController,
+                      label: translation.tr('turkish_meaning'),
+                      icon: Icons.translate_rounded,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                height: 60,
+                child: ElevatedButton(
+                  onPressed: isLoading
+                      ? null
+                      : () async {
+                          if (!formKey.currentState!.validate()) return;
+
+                          setDialogState(() => isLoading = true);
+
+                          try {
+                            final word = Word(
+                              english: englishController.text.trim(),
+                              turkish: turkishController.text.trim(),
+                              levelScore: 0,
+                              aiSentence: '',
+                              aiSentenceTr: '',
+                              createdAt: DateTime.now().toIso8601String(),
+                            );
+
+                            await DatabaseHelper.instance.insertWord(word);
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(translation.tr('word_added')),
+                                  backgroundColor: const Color(0xFF6366F1),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  elevation: 8,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('${translation.tr('error')}: $e'),
+                                  backgroundColor: Colors.redAccent,
+                                ),
+                              );
+                            }
+                          } finally {
+                            if (context.mounted) {
+                              setDialogState(() => isLoading = false);
+                            }
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    elevation: 4,
+                    shadowColor: Theme.of(context).colorScheme.primary.withOpacity(0.4),
+                  ),
+                  child: isLoading
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          translation.tr('add'),
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModernTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    bool autofocus = false,
+  }) {
+    return TextFormField(
+      controller: controller,
+      autofocus: autofocus,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, size: 20, color: const Color(0xFF6366F1)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.grey.shade200),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.grey.shade200),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0xFF6366F1), width: 2),
+        ),
+        filled: true,
+        fillColor: Colors.grey.shade50,
+      ),
+      validator: (v) => (v == null || v.isEmpty) ? translation.tr('required') : null,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _pages,
-      ),
+      backgroundColor: const Color(0xFFF8F9FE),
+      body: IndexedStack(index: _selectedIndex, children: _pages),
       bottomNavigationBar: _buildCustomNavBar(),
     );
   }
 
   Widget _buildCustomNavBar() {
     return Container(
-      margin: const EdgeInsets.fromLTRB(24, 0, 24, 30),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      margin: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.4),
-            blurRadius: 20,
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 30,
             offset: const Offset(0, 10),
-          )
+          ),
         ],
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _buildNavItem(0, Icons.school_outlined, Icons.school_rounded, 'Alıştırma'),
-          _buildNavItem(1, Icons.add_circle_outline, Icons.add_circle_rounded, 'Ekle'),
-          _buildNavItem(2, Icons.grid_view_outlined, Icons.grid_view_rounded, 'Kelimeler'),
+          _buildNavItem(
+            0,
+            Icons.school_rounded,
+            Icons.school_rounded,
+            translation.tr('exercise'),
+          ),
+          _buildActionNavItem(),
+          _buildNavItem(
+            2,
+            Icons.grid_view_rounded,
+            Icons.grid_view_rounded,
+            translation.tr('words'),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label) {
-    bool isSelected = _selectedIndex == index;
+  Widget _buildActionNavItem() {
+    return GestureDetector(
+      onTap: _showAddWordDialog,
+      child: Container(
+        height: 54,
+        width: 54,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF6366F1).withOpacity(0.3),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: const Icon(Icons.add_rounded, color: Colors.white, size: 32),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(
+    int index,
+    IconData icon,
+    IconData activeIcon,
+    String label,
+  ) {
+    int logicIndex = index == 2 ? 1 : index;
+    bool isSelected = _selectedIndex == logicIndex;
+
     return GestureDetector(
       onTap: () {
         setState(() {
-          _selectedIndex = index;
+          _selectedIndex = logicIndex;
         });
       },
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? Theme.of(context).colorScheme.primary.withOpacity(0.15) : Colors.transparent,
+          color: isSelected ? const Color(0xFF6366F1).withOpacity(0.08) : Colors.transparent,
           borderRadius: BorderRadius.circular(24),
         ),
-        child: Row(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               isSelected ? activeIcon : icon,
-              color: isSelected ? Theme.of(context).colorScheme.primary : Colors.white38,
-              size: 26,
+              color: isSelected ? const Color(0xFF6366F1) : Colors.blueGrey.shade200,
+              size: 24,
             ),
-            if (isSelected) ...[
-              const SizedBox(width: 12),
-              Text(
-                label,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? const Color(0xFF6366F1) : Colors.blueGrey.shade200,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                fontSize: 11,
               ),
-            ],
+            ),
           ],
         ),
       ),
@@ -115,14 +352,32 @@ class _ExerciseTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
+    return const SafeArea(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const _ActionGrid(),
-            const SizedBox(height: 120), // Space for floating navbar
+            Text(
+              'VocabFlow',
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFF263238), // blueGrey.shade900
+                letterSpacing: -1,
+              ),
+            ),
+            Text(
+              'Pratik yaparak seviyeni yükselt',
+              style: TextStyle(
+                fontSize: 16,
+                color: Color(0xFF78909C), // blueGrey.shade400
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            SizedBox(height: 40),
+            _ActionGrid(),
+            SizedBox(height: 120),
           ],
         ),
       ),
@@ -135,104 +390,101 @@ class _ActionGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tr = LanguageManager();
     return GridView.count(
       crossAxisCount: 2,
       crossAxisSpacing: 16,
       mainAxisSpacing: 16,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
+      childAspectRatio: 0.9,
       children: [
         _buildActionCard(
           context,
-          title: 'Flashcards',
-          icon: Icons.style,
-          color: Colors.deepOrangeAccent,
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const FlashcardsScreen()),
-            );
-          },
+          title: tr.tr('flashcards'),
+          icon: Icons.style_rounded,
+          color: const Color(0xFFF43F5E), // Rose
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const FlashcardsScreen())),
         ),
         _buildActionCard(
           context,
-          title: 'Spelling',
-          icon: Icons.edit_note,
-          color: Colors.blueAccent,
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const SpellingMasteryScreen()),
-            );
-          },
+          title: tr.tr('spelling'),
+          icon: Icons.edit_note_rounded,
+          color: const Color(0xFF0EA5E9), // Sky
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SpellingMasteryScreen())),
         ),
         _buildActionCard(
           context,
-          title: 'Speed Match',
-          icon: Icons.bolt,
-          color: Colors.orangeAccent,
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const SpeedMatchScreen()),
-            );
-          },
+          title: tr.tr('speed_match'),
+          icon: Icons.bolt_rounded,
+          color: const Color(0xFFF59E0B), // Amber
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SpeedMatchScreen())),
         ),
         _buildActionCard(
           context,
-          title: 'Voice',
-          icon: Icons.record_voice_over,
-          color: Colors.pinkAccent,
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const VoiceShadowingScreen()),
-            );
-          },
+          title: tr.tr('voice'),
+          icon: Icons.record_voice_over_rounded,
+          color: const Color(0xFF8B5CF6), // Violet
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const VoiceShadowingScreen())),
         ),
         _buildActionCard(
           context,
-          title: 'Quiz',
-          icon: Icons.quiz,
-          color: Colors.tealAccent,
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const QuizScreen()),
-            );
-          },
+          title: tr.tr('quiz'),
+          icon: Icons.quiz_rounded,
+          color: const Color(0xFF10B981), // Emerald
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const QuizScreen())),
         ),
       ],
     );
   }
 
-  Widget _buildActionCard(BuildContext context, {required String title, required IconData icon, required Color color, required VoidCallback onTap}) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardTheme.color,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white10),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.1),
-              blurRadius: 10,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 48, color: color),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-          ],
+  Widget _buildActionCard(
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 32, color: color),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.blueGrey.shade900,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

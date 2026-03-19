@@ -3,6 +3,7 @@ import 'package:flip_card/flip_card.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import '../../core/database/database_helper.dart';
 import '../../models/word_model.dart';
+import '../../core/localization/app_translation.dart';
 
 class FlashcardsScreen extends StatefulWidget {
   const FlashcardsScreen({super.key});
@@ -16,12 +17,25 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
   late Future<List<Word>> _wordsFuture;
   final PageController _pageController = PageController();
   int _currentIndex = 0;
+  bool _isExiting = false;
+  final translation = LanguageManager();
 
   @override
   void initState() {
     super.initState();
     _wordsFuture = DatabaseHelper.instance.getAllWords();
     _initTts();
+    translation.addListener(_onLanguageChange);
+  }
+
+  @override
+  void dispose() {
+    translation.removeListener(_onLanguageChange);
+    super.dispose();
+  }
+
+  void _onLanguageChange() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _initTts() async {
@@ -37,8 +51,9 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FE),
       appBar: AppBar(
-        title: const Text('Flashcards', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(translation.tr('flashcards'), style: const TextStyle(fontWeight: FontWeight.w900)),
         centerTitle: true,
       ),
       body: FutureBuilder<List<Word>>(
@@ -49,24 +64,34 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
           }
 
           if (snapshot.hasError) {
-            return Center(child: Text('Hata: ${snapshot.error}'));
+            return Center(child: Text('${translation.tr('error')}: ${snapshot.error}'));
           }
 
           final words = snapshot.data;
           if (words == null || words.isEmpty) {
             return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.style_outlined, size: 64, color: Colors.white24),
-                  const SizedBox(height: 16),
-                  const Text('Henüz kelime eklemediniz.', style: TextStyle(color: Colors.white70)),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Geri Dön'),
-                  ),
-                ],
+              child: Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(32),
+                      decoration: BoxDecoration(color: Colors.grey.shade100, shape: BoxShape.circle),
+                      child: Icon(Icons.style_outlined, size: 64, color: Colors.grey.shade300),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      translation.tr('no_words'),
+                      style: TextStyle(color: Colors.blueGrey.shade900, fontSize: 18, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 32),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(translation.tr('back')),
+                    ),
+                  ],
+                ),
               ),
             );
           }
@@ -75,81 +100,87 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
             children: [
               const SizedBox(height: 20),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(horizontal: 32),
                 child: Column(
                   children: [
-                    LinearProgressIndicator(
-                      value: (_currentIndex + 1) / words.length,
-                      backgroundColor: Colors.white10,
-                      borderRadius: BorderRadius.circular(10),
-                      minHeight: 8,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${translation.tr('progress')}',
+                          style: TextStyle(fontWeight: FontWeight.w800, color: Colors.blueGrey.shade400, fontSize: 13),
+                        ),
+                        Text(
+                          '${_currentIndex + 1} / ${words.length}',
+                          style: const TextStyle(color: Color(0xFF6366F1), fontWeight: FontWeight.w900, fontSize: 13),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${_currentIndex + 1} / ${words.length}',
-                      style: const TextStyle(color: Colors.white54, fontWeight: FontWeight.bold),
+                    const SizedBox(height: 12),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: LinearProgressIndicator(
+                        value: (_currentIndex + 1) / words.length,
+                        backgroundColor: Colors.grey.shade200,
+                        minHeight: 10,
+                        valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
+                      ),
                     ),
                   ],
                 ),
               ),
               Expanded(
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: words.length,
-                  onPageChanged: (index) {
-                    setState(() {
-                      _currentIndex = index;
-                    });
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: (notification) {
+                    if (notification is ScrollUpdateNotification) {
+                      if (_currentIndex == words.length - 1 &&
+                          notification.metrics.pixels > notification.metrics.maxScrollExtent + 40) {
+                        if (!_isExiting) {
+                          _isExiting = true;
+                          Navigator.pop(context);
+                        }
+                      }
+                    }
+                    return false;
                   },
-                  itemBuilder: (context, index) {
-                    final word = words[index];
-                    return Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: FlipCard(
-                        direction: FlipDirection.HORIZONTAL,
-                        front: _buildCardSide(
-                          context,
-                          title: 'İngilizce',
-                          content: word.english,
-                          color: Theme.of(context).colorScheme.primaryContainer,
-                          textColor: Theme.of(context).colorScheme.onPrimaryContainer,
-                          isFront: true,
+                  child: PageView.builder(
+                    controller: _pageController,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: words.length,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentIndex = index;
+                      });
+                    },
+                    itemBuilder: (context, index) {
+                      final word = words[index];
+                      return Padding(
+                        padding: const EdgeInsets.all(32.0),
+                        child: FlipCard(
+                          direction: FlipDirection.HORIZONTAL,
+                          front: _buildCardSide(
+                            context,
+                            title: translation.tr('english'),
+                            content: word.english,
+                            color: Colors.white,
+                            textColor: Colors.blueGrey.shade900,
+                            isFront: true,
+                          ),
+                          back: _buildCardSide(
+                            context,
+                            title: translation.tr('turkish'),
+                            content: word.turkish,
+                            color: const Color(0xFF6366F1),
+                            textColor: Colors.white,
+                            isFront: false,
+                          ),
                         ),
-                        back: _buildCardSide(
-                          context,
-                          title: 'Türkçe',
-                          content: word.turkish,
-                          color: Theme.of(context).colorScheme.secondaryContainer,
-                          textColor: Theme.of(context).colorScheme.onSecondaryContainer,
-                          isFront: false,
-                          example: word.aiSentence,
-                          exampleTr: word.aiSentenceTr,
-                        ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 40, left: 24, right: 24),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildActionButton(
-                      icon: Icons.close,
-                      label: 'Tekrar Et',
-                      color: Colors.redAccent,
-                      onTap: () => _nextCard(words.length),
-                    ),
-                    _buildActionButton(
-                      icon: Icons.check,
-                      label: 'Öğrendim',
-                      color: Colors.greenAccent,
-                      onTap: () => _nextCard(words.length),
-                    ),
-                  ],
-                ),
-              ),
+              const SizedBox(height: 48),
             ],
           );
         },
@@ -164,120 +195,88 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
     required Color color,
     required Color textColor,
     required bool isFront,
-    String? example,
-    String? exampleTr,
   }) {
     return Container(
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(40),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
+            color: isFront ? Colors.black.withOpacity(0.05) : const Color(0xFF6366F1).withOpacity(0.3),
+            blurRadius: 30,
+            offset: const Offset(0, 15),
           ),
         ],
+        border: isFront ? Border.all(color: Colors.grey.shade100) : null,
       ),
       child: Stack(
         children: [
+          if (isFront)
+            Positioned(
+              top: 0,
+              right: 0,
+              child: Container(
+                margin: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6366F1).withOpacity(0.05),
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.volume_up_rounded, color: Color(0xFF6366F1), size: 28),
+                  onPressed: () => _speak(content),
+                ),
+              ),
+            ),
           Center(
             child: Padding(
-              padding: const EdgeInsets.all(32.0),
+              padding: const EdgeInsets.all(40.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     title.toUpperCase(),
                     style: TextStyle(
-                      color: textColor.withOpacity(0.6),
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 2,
-                      fontSize: 14,
+                      color: isFront ? Colors.blueGrey.shade200 : Colors.white.withOpacity(0.6),
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2.5,
+                      fontSize: 12,
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
                   Text(
                     content,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: textColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 42,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 48,
+                      letterSpacing: -1,
                     ),
                   ),
-                  if (!isFront) ...[
-                    if (example != null && example.isNotEmpty) ...[
-                      const SizedBox(height: 40),
-                      const Divider(color: Colors.white24, indent: 40, endIndent: 40),
-                      const SizedBox(height: 20),
-                      Text(
-                        'Örnek Cümle:',
-                        style: TextStyle(
-                          color: textColor.withOpacity(0.7),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        example,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: textColor,
-                          fontSize: 16,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        exampleTr ?? '',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: textColor.withOpacity(0.7),
-                          fontSize: 14,
-                        ),
-                      ),
-                    ] else ...[
-                      const SizedBox(height: 40),
-                      const Divider(color: Colors.white10, indent: 40, endIndent: 40),
-                      const SizedBox(height: 20),
-                      Icon(Icons.auto_awesome, color: textColor.withOpacity(0.3), size: 32),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Cümle oluşturmak için dokun',
-                        style: TextStyle(
-                          color: textColor.withOpacity(0.4),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ],
                 ],
               ),
             ),
           ),
-          if (isFront)
-            Positioned(
-              top: 20,
-              right: 20,
-              child: IconButton(
-                icon: Icon(Icons.volume_up, color: textColor),
-                onPressed: () => _speak(content),
-              ),
-            ),
           Positioned(
-            bottom: 20,
+            bottom: 32,
             left: 0,
             right: 0,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.touch_app, color: textColor.withOpacity(0.3), size: 20),
+                Icon(
+                  Icons.touch_app_rounded,
+                  color: isFront ? Colors.blueGrey.shade100 : Colors.white.withOpacity(0.3),
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
                 Text(
-                  'Çevirmek için dokun',
-                  style: TextStyle(color: textColor.withOpacity(0.3), fontSize: 12),
+                  translation.tr('flip_to_translate'),
+                  style: TextStyle(
+                    color: isFront ? Colors.blueGrey.shade100 : Colors.white.withOpacity(0.3),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
@@ -285,61 +284,5 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
         ],
       ),
     );
-  }
-
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        GestureDetector(
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              shape: BoxShape.circle,
-              border: Border.all(color: color.withOpacity(0.5), width: 2),
-            ),
-            child: Icon(icon, color: color, size: 32),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: TextStyle(color: color.withOpacity(0.8), fontWeight: FontWeight.bold, fontSize: 12),
-        ),
-      ],
-    );
-  }
-
-  void _nextCard(int total) {
-    if (_currentIndex < total - 1) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    } else {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Tebrikler!'),
-          content: const Text('Tüm kelimeleri gözden geçirdiniz.'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pop(context);
-              },
-              child: const Text('Tamamla'),
-            ),
-          ],
-        ),
-      );
-    }
   }
 }
