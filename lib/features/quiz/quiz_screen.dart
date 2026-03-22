@@ -2,7 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../core/database/database_helper.dart';
 import '../../models/word_model.dart';
-import '../../core/localization/app_translation.dart';
+
 import 'package:audioplayers/audioplayers.dart';
 
 class QuizScreen extends StatefulWidget {
@@ -21,25 +21,20 @@ class _QuizScreenState extends State<QuizScreen> {
   List<String> _currentOptions = [];
   bool _isLoading = true;
   final AudioPlayer _audioPlayer = AudioPlayer();
-  final translation = LanguageManager();
+
 
   @override
   void initState() {
     super.initState();
     _loadQuiz();
-    translation.addListener(_onLanguageChange);
   }
 
   @override
   void dispose() {
-    translation.removeListener(_onLanguageChange);
     _audioPlayer.dispose();
     super.dispose();
   }
 
-  void _onLanguageChange() {
-    if (mounted) setState(() {});
-  }
 
   Future<void> _loadQuiz() async {
     final allWords = await DatabaseHelper.instance.getAllWords();
@@ -70,14 +65,14 @@ class _QuizScreenState extends State<QuizScreen> {
     if (_questions.isEmpty) return;
     
     final correctWord = _questions[_currentQuestionIndex];
-    List<String> options = [correctWord.turkish];
+    List<String> options = [correctWord.meaning];
     
     // Get wrong options
     final random = Random();
     while (options.length < 4) {
       final randomWord = allWords[random.nextInt(allWords.length)];
-      if (!options.contains(randomWord.turkish)) {
-        options.add(randomWord.turkish);
+      if (!options.contains(randomWord.meaning)) {
+        options.add(randomWord.meaning);
       }
     }
     
@@ -91,7 +86,7 @@ class _QuizScreenState extends State<QuizScreen> {
     setState(() {
       _answered = true;
       _selectedOptionIndex = index;
-      if (_currentOptions[index] == _questions[_currentQuestionIndex].turkish) {
+      if (_currentOptions[index] == _questions[_currentQuestionIndex].meaning) {
         _score++;
         _audioPlayer.play(AssetSource('sounds/success.mp3'));
       } else {
@@ -136,7 +131,7 @@ class _QuizScreenState extends State<QuizScreen> {
               ),
               const SizedBox(height: 24),
               Text(
-                translation.tr('quiz_completed'),
+                'Quiz Completed!',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 24,
@@ -147,7 +142,7 @@ class _QuizScreenState extends State<QuizScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                '${translation.tr('score')}: $_score / ${_questions.length}',
+                'Score: $_score / ${_questions.length}',
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w900,
@@ -156,7 +151,7 @@ class _QuizScreenState extends State<QuizScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                _score > (_questions.length / 2) ? translation.tr('great_job') : translation.tr('need_more_practice'),
+                _score > (_questions.length / 2) ? 'Great job!' : 'You need more practice.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.blueGrey.shade400, fontSize: 16, fontWeight: FontWeight.w500),
               ),
@@ -168,7 +163,7 @@ class _QuizScreenState extends State<QuizScreen> {
                     Navigator.pop(context);
                     Navigator.pop(context);
                   },
-                  child: Text(translation.tr('go_to_home')),
+                  child: const Text('Go to Home'),
                 ),
               ),
             ],
@@ -187,7 +182,7 @@ class _QuizScreenState extends State<QuizScreen> {
     if (_questions.isEmpty) {
       return Scaffold(
         backgroundColor: const Color(0xFFF8F9FE),
-        appBar: AppBar(title: Text(translation.tr('quiz'))),
+        appBar: AppBar(title: const Text('Quiz')),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(32),
@@ -201,14 +196,14 @@ class _QuizScreenState extends State<QuizScreen> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  translation.tr('need_at_least_4_words'),
+                   'You need at least 4 words to start a quiz.',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 18, color: Colors.blueGrey.shade900, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 32),
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text(translation.tr('back')),
+                  child: const Text('Go Back'),
                 ),
               ],
             ),
@@ -222,7 +217,7 @@ class _QuizScreenState extends State<QuizScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FE),
       appBar: AppBar(
-        title: Text(translation.tr('quiz'), style: const TextStyle(fontWeight: FontWeight.w900)),
+        title: const Text('Quiz', style: TextStyle(fontWeight: FontWeight.w900)),
         centerTitle: true,
       ),
       body: Column(
@@ -235,11 +230,7 @@ class _QuizScreenState extends State<QuizScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      '${translation.tr('question')}: ${_currentQuestionIndex + 1}/${_questions.length}',
-                      style: TextStyle(fontWeight: FontWeight.w800, color: Colors.blueGrey.shade400, fontSize: 13),
-                    ),
-                    Text(
-                      '${translation.tr('score')}: $_score',
+                      'Score: $_score',
                       style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF10B981), fontSize: 13),
                     ),
                   ],
@@ -280,7 +271,7 @@ class _QuizScreenState extends State<QuizScreen> {
                     child: Column(
                       children: [
                         Text(
-                          translation.tr('what_is_meaning').toUpperCase(),
+                          'WHAT IS THE MEANING OF THIS WORD?',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Colors.blueGrey.shade200,
@@ -291,7 +282,7 @@ class _QuizScreenState extends State<QuizScreen> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          currentWord.english,
+                          currentWord.word,
                           style: TextStyle(
                             fontSize: 40,
                             fontWeight: FontWeight.w900,
@@ -306,7 +297,7 @@ class _QuizScreenState extends State<QuizScreen> {
                   const SizedBox(height: 32),
                   ...List.generate(4, (index) {
                     final option = _currentOptions[index];
-                    return _buildOptionTile(index, option, currentWord.turkish);
+                    return _buildOptionTile(index, option, currentWord.meaning);
                   }),
                 ],
               ),
@@ -321,7 +312,7 @@ class _QuizScreenState extends State<QuizScreen> {
                   minimumSize: const Size(double.infinity, 60),
                 ),
                 child: Text(
-                  _currentQuestionIndex < _questions.length - 1 ? translation.tr('next_question') : translation.tr('see_results'),
+                  _currentQuestionIndex < _questions.length - 1 ? 'Next Question' : 'SEE RESULTS',
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                 ),
               ),

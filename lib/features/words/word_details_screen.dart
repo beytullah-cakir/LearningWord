@@ -38,14 +38,14 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
       final aiService = AiPromptService(apiKey: 'YOUR_GEMINI_API_KEY_HERE');
       
       final result = await aiService.generateSentence(
-        englishWord: _currentWord.english,
+        word: _currentWord.word,
         level: userLevel,
       );
 
       if (result != null && result['sentence'] != null) {
         final updatedWord = _currentWord.copyWith(
           aiSentence: result['sentence']!,
-          aiSentenceTr: result['translation']!,
+          aiSentenceMeaning: result['meaning']!,
         );
         await DatabaseHelper.instance.updateWord(updatedWord);
         setState(() => _currentWord = updatedWord);
@@ -59,10 +59,10 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('İnternet Bağlantısı Gerekli'),
-        content: const Text('Yapay zeka ile cümle oluşturabilmek için aktif bir internet bağlantınızın olması gerekmektedir.'),
+        title: const Text('Internet Connection Required'),
+        content: const Text('An active internet connection is required to generate sentences with AI.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Tamam')),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
         ],
       ),
     );
@@ -73,7 +73,7 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FE),
       appBar: AppBar(
-        title: Text(_currentWord.english, style: const TextStyle(fontWeight: FontWeight.w800)),
+        title: Text(_currentWord.word, style: const TextStyle(fontWeight: FontWeight.w800)),
         actions: [
           IconButton(
             icon: Container(
@@ -114,7 +114,7 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
               child: Column(
                 children: [
                   Text(
-                    _currentWord.english,
+                    _currentWord.word,
                     style: const TextStyle(
                       fontSize: 36,
                       fontWeight: FontWeight.w900,
@@ -124,7 +124,7 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    _currentWord.turkish,
+                    _currentWord.meaning,
                     style: TextStyle(
                       fontSize: 20,
                       color: Colors.white.withOpacity(0.8),
@@ -140,7 +140,7 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
                 const Icon(Icons.auto_awesome_rounded, color: Color(0xFF6366F1), size: 20),
                 const SizedBox(width: 8),
                 Text(
-                  'Örnek Cümle (AI)',
+                  'Example Sentence (AI)',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
@@ -151,12 +151,12 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
             ),
             const SizedBox(height: 16),
             if (_currentWord.aiSentence.isNotEmpty) ...[
-              _buildSentenceCard(_currentWord.aiSentence, _currentWord.aiSentenceTr),
+              _buildSentenceCard(_currentWord.aiSentence, _currentWord.aiSentenceMeaning),
               const SizedBox(height: 24),
               ElevatedButton.icon(
                 onPressed: _isLoading ? null : _generateAISentence,
                 icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Yeni Cümle Oluştur'),
+                label: const Text('Generate New Sentence'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: const Color(0xFF6366F1),
@@ -184,7 +184,7 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
                     ),
                     const SizedBox(height: 20),
                     Text(
-                      'Henüz bir örnek cümle oluşturulmamış.',
+                      'No example sentence generated yet.',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.blueGrey.shade400, fontSize: 15, fontWeight: FontWeight.w500),
                     ),
@@ -194,7 +194,7 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
                         : ElevatedButton.icon(
                             onPressed: _generateAISentence,
                             icon: const Icon(Icons.bolt_rounded),
-                            label: const Text('Hemen Oluştur'),
+                            label: const Text('Generate Now'),
                           ),
                   ],
                 ),
@@ -202,7 +202,7 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
             ],
             const SizedBox(height: 48),
             Text(
-              "Eklenme Tarihi: ${DateTime.parse(_currentWord.createdAt).toLocal().toString().split('.').first}",
+              "Added Date: ${DateTime.parse(_currentWord.createdAt).toLocal().toString().split('.').first}",
               style: TextStyle(color: Colors.blueGrey.shade200, fontSize: 13, fontWeight: FontWeight.w500),
               textAlign: TextAlign.center,
             ),
@@ -263,14 +263,14 @@ class _WordDetailsScreenState extends State<WordDetailsScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text('Kelimeyi Sil', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: Text('${_currentWord.english} kelimesini silmek istediğinize emin misiniz?'),
+        title: const Text('Delete Word', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Text('Are you sure you want to delete the word ${_currentWord.word}?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('İptal')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
-            child: const Text('Sil', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text('Delete', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],
       ),

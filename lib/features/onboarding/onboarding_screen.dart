@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../home/home_screen.dart';
-import '../../core/localization/app_translation.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -14,24 +13,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPageIndex = 0;
   String? _selectedLevel;
-  final translation = LanguageManager();
 
   final List<String> _levels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
   @override
   void initState() {
     super.initState();
-    translation.addListener(_onLanguageChange);
   }
 
   @override
   void dispose() {
-    translation.removeListener(_onLanguageChange);
     super.dispose();
-  }
-
-  void _onLanguageChange() {
-    if (mounted) setState(() {});
   }
 
   void _onNext() {
@@ -48,7 +40,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _completeOnboarding() async {
     if (_selectedLevel == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(translation.tr('please_select_level'))),
+        SnackBar(content: Text('Please select an English level.')),
       );
       return;
     }
@@ -58,9 +50,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     await prefs.setBool('hasCompletedOnboarding', true);
 
     if (!mounted) return;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
-    );
+    Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
   }
 
   @override
@@ -80,14 +72,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 },
                 children: [
                   _buildPage(
-                    title: translation.tr('welcome'),
-                    description: translation.tr('welcome_desc'),
+                    title: 'Welcome to  AI!',
+                    description:
+                        'Build your own vocabulary, improve your English with AI-powered example sentences.',
                     icon: Icons.auto_awesome_rounded,
                     color: const Color(0xFF6366F1),
                   ),
                   _buildPage(
-                    title: translation.tr('smart_learning'),
-                    description: translation.tr('smart_learning_desc'),
+                    title: 'Smart Learning Modes',
+                    description:
+                        'Continue learning words everywhere with flashcards and dynamic tests.',
                     icon: Icons.school_rounded,
                     color: const Color(0xFF8B5CF6),
                   ),
@@ -160,11 +154,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               color: const Color(0xFF6366F1).withOpacity(0.05),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.language_rounded, size: 60, color: Color(0xFF6366F1)),
+            child: const Icon(
+              Icons.language_rounded,
+              size: 60,
+              color: Color(0xFF6366F1),
+            ),
           ),
           const SizedBox(height: 40),
           Text(
-            translation.tr('select_level'),
+            'Select Your English Level',
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.w900,
@@ -175,7 +173,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            translation.tr('level_desc'),
+            'It is important for us to generate suitable example sentences for you.',
             style: TextStyle(
               fontSize: 15,
               color: Colors.blueGrey.shade400,
@@ -206,13 +204,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: isSelected ? const Color(0xFF6366F1).withOpacity(0.3) : Colors.black.withOpacity(0.03),
+                        color: isSelected
+                            ? const Color(0xFF6366F1).withOpacity(0.3)
+                            : Colors.black.withOpacity(0.03),
                         blurRadius: 15,
                         offset: const Offset(0, 8),
                       ),
                     ],
                     border: Border.all(
-                      color: isSelected ? const Color(0xFF6366F1) : Colors.grey.shade100,
+                      color: isSelected
+                          ? const Color(0xFF6366F1)
+                          : Colors.grey.shade100,
                     ),
                   ),
                   alignment: Alignment.center,
@@ -221,7 +223,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
-                      color: isSelected ? Colors.white : Colors.blueGrey.shade700,
+                      color: isSelected
+                          ? Colors.white
+                          : Colors.blueGrey.shade700,
                     ),
                   ),
                 ),
@@ -249,7 +253,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 height: 10,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(5),
-                  color: isActive ? const Color(0xFF6366F1) : Colors.blueGrey.shade100,
+                  color: isActive
+                      ? const Color(0xFF6366F1)
+                      : Colors.blueGrey.shade100,
                 ),
               );
             }),
@@ -259,7 +265,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               if (_currentPageIndex == 2 && _selectedLevel == null) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(translation.tr('select_level_to_continue')),
+                    content: Text('Please select a level to continue.'),
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
@@ -274,13 +280,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               elevation: 4,
             ),
             child: Text(
-              _currentPageIndex == 2 ? translation.tr('start') : translation.tr('next_btn'),
+              _currentPageIndex == 2 ? 'Start' : 'Next',
               style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
             ),
-          )
+          ),
         ],
       ),
     );
   }
 }
-

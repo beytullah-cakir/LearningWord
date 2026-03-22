@@ -7,7 +7,6 @@ import '../quiz/spelling_mastery_screen.dart';
 import '../quiz/speed_match_screen.dart';
 import '../quiz/voice_shadowing_screen.dart';
 import '../quiz/quiz_screen.dart';
-import '../../core/localization/app_translation.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,22 +17,15 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
-  final translation = LanguageManager();
 
   @override
   void initState() {
     super.initState();
-    translation.addListener(_onLanguageChange);
   }
 
   @override
   void dispose() {
-    translation.removeListener(_onLanguageChange);
     super.dispose();
-  }
-
-  void _onLanguageChange() {
-    if (mounted) setState(() {});
   }
 
   List<Widget> get _pages => [const _ExerciseTab(), const WordsListScreen()];
@@ -77,7 +69,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -88,7 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(width: 16),
                   Text(
-                    translation.tr('add_new_word'),
+                    'Add New Word',
                     style: TextStyle(
                       color: Colors.blueGrey.shade900,
                       fontSize: 24,
@@ -105,14 +99,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     _buildModernTextField(
                       controller: englishController,
-                      label: translation.tr('english_word'),
+                      label: 'Word',
                       icon: Icons.language_rounded,
                       autofocus: true,
                     ),
                     const SizedBox(height: 20),
                     _buildModernTextField(
                       controller: turkishController,
-                      label: translation.tr('turkish_meaning'),
+                      label: 'Meaning',
                       icon: Icons.translate_rounded,
                     ),
                   ],
@@ -132,11 +126,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
                           try {
                             final word = Word(
-                              english: englishController.text.trim(),
-                              turkish: turkishController.text.trim(),
+                              word: englishController.text.trim(),
+                              meaning: turkishController.text.trim(),
                               levelScore: 0,
                               aiSentence: '',
-                              aiSentenceTr: '',
+                              aiSentenceMeaning: '',
                               createdAt: DateTime.now().toIso8601String(),
                             );
 
@@ -145,10 +139,12 @@ class _HomeScreenState extends State<HomeScreen> {
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text(translation.tr('word_added')),
+                                  content: Text('Word added successfully!'),
                                   backgroundColor: const Color(0xFF6366F1),
                                   behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
                                   elevation: 8,
                                 ),
                               );
@@ -157,7 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text('${translation.tr('error')}: $e'),
+                                  content: Text('Error: $e'),
                                   backgroundColor: Colors.redAccent,
                                 ),
                               );
@@ -170,7 +166,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         },
                   style: ElevatedButton.styleFrom(
                     elevation: 4,
-                    shadowColor: Theme.of(context).colorScheme.primary.withOpacity(0.4),
+                    shadowColor: Theme.of(
+                      context,
+                    ).colorScheme.primary.withOpacity(0.4),
                   ),
                   child: isLoading
                       ? const SizedBox(
@@ -182,7 +180,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         )
                       : Text(
-                          translation.tr('add'),
+                          'Add',
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
@@ -224,7 +222,7 @@ class _HomeScreenState extends State<HomeScreen> {
         filled: true,
         fillColor: Colors.grey.shade50,
       ),
-      validator: (v) => (v == null || v.isEmpty) ? translation.tr('required') : null,
+      validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
     );
   }
 
@@ -260,14 +258,14 @@ class _HomeScreenState extends State<HomeScreen> {
             0,
             Icons.school_rounded,
             Icons.school_rounded,
-            translation.tr('exercise'),
+            'Exercise',
           ),
           _buildActionNavItem(),
           _buildNavItem(
             2,
             Icons.grid_view_rounded,
             Icons.grid_view_rounded,
-            translation.tr('words'),
+            'Words',
           ),
         ],
       ),
@@ -320,7 +318,9 @@ class _HomeScreenState extends State<HomeScreen> {
         duration: const Duration(milliseconds: 300),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF6366F1).withOpacity(0.08) : Colors.transparent,
+          color: isSelected
+              ? const Color(0xFF6366F1).withOpacity(0.08)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(24),
         ),
         child: Column(
@@ -328,14 +328,18 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Icon(
               isSelected ? activeIcon : icon,
-              color: isSelected ? const Color(0xFF6366F1) : Colors.blueGrey.shade200,
+              color: isSelected
+                  ? const Color(0xFF6366F1)
+                  : Colors.blueGrey.shade200,
               size: 24,
             ),
             const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? const Color(0xFF6366F1) : Colors.blueGrey.shade200,
+                color: isSelected
+                    ? const Color(0xFF6366F1)
+                    : Colors.blueGrey.shade200,
                 fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
                 fontSize: 11,
               ),
@@ -358,26 +362,8 @@ class _ExerciseTab extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'VocabFlow',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.w900,
-                color: Color(0xFF263238), // blueGrey.shade900
-                letterSpacing: -1,
-              ),
-            ),
-            Text(
-              'Pratik yaparak seviyeni yükselt',
-              style: TextStyle(
-                fontSize: 16,
-                color: Color(0xFF78909C), // blueGrey.shade400
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            SizedBox(height: 40),
             _ActionGrid(),
-            SizedBox(height: 120),
+            
           ],
         ),
       ),
@@ -390,7 +376,6 @@ class _ActionGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tr = LanguageManager();
     return GridView.count(
       crossAxisCount: 2,
       crossAxisSpacing: 16,
@@ -401,38 +386,57 @@ class _ActionGrid extends StatelessWidget {
       children: [
         _buildActionCard(
           context,
-          title: tr.tr('flashcards'),
+          title: 'Flashcards',
           icon: Icons.style_rounded,
           color: const Color(0xFFF43F5E), // Rose
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const FlashcardsScreen())),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const FlashcardsScreen()),
+          ),
         ),
         _buildActionCard(
           context,
-          title: tr.tr('spelling'),
+          title: 'Spelling',
           icon: Icons.edit_note_rounded,
           color: const Color(0xFF0EA5E9), // Sky
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SpellingMasteryScreen())),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const SpellingMasteryScreen(),
+            ),
+          ),
         ),
         _buildActionCard(
           context,
-          title: tr.tr('speed_match'),
+          title: 'Speed Match',
           icon: Icons.bolt_rounded,
           color: const Color(0xFFF59E0B), // Amber
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SpeedMatchScreen())),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const SpeedMatchScreen()),
+          ),
         ),
         _buildActionCard(
           context,
-          title: tr.tr('voice'),
+          title: 'Voice',
           icon: Icons.record_voice_over_rounded,
           color: const Color(0xFF8B5CF6), // Violet
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const VoiceShadowingScreen())),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const VoiceShadowingScreen(),
+            ),
+          ),
         ),
         _buildActionCard(
           context,
-          title: tr.tr('quiz'),
+          title: 'Quiz',
           icon: Icons.quiz_rounded,
           color: const Color(0xFF10B981), // Emerald
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const QuizScreen())),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const QuizScreen()),
+          ),
         ),
       ],
     );

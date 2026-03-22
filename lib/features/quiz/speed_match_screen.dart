@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/database/database_helper.dart';
 import '../../models/word_model.dart';
-import '../../core/localization/app_translation.dart';
+
 import 'package:audioplayers/audioplayers.dart';
 
 class SpeedMatchScreen extends StatefulWidget {
@@ -27,26 +27,21 @@ class _SpeedMatchScreenState extends State<SpeedMatchScreen> {
   int _currentBatchIndex = 0;
   static const int batchSize = 5;
   final AudioPlayer _audioPlayer = AudioPlayer();
-  final translation = LanguageManager();
+
 
   @override
   void initState() {
     super.initState();
     _loadData();
-    translation.addListener(_onLanguageChange);
   }
 
   @override
   void dispose() {
     _timer?.cancel();
-    translation.removeListener(_onLanguageChange);
     _audioPlayer.dispose();
     super.dispose();
   }
 
-  void _onLanguageChange() {
-    if (mounted) setState(() {});
-  }
 
   Future<void> _loadData() async {
     final words = await DatabaseHelper.instance.getAllWords();
@@ -77,8 +72,8 @@ class _SpeedMatchScreenState extends State<SpeedMatchScreen> {
     _currentBatchWords = _allWords.sublist(start, end);
     
     setState(() {
-      _englishList = _currentBatchWords.map((e) => e.english).toList()..shuffle();
-      _turkishList = _currentBatchWords.map((e) => e.turkish).toList()..shuffle();
+      _englishList = _currentBatchWords.map((e) => e.word).toList()..shuffle();
+      _turkishList = _currentBatchWords.map((e) => e.meaning).toList()..shuffle();
       _matchedPairsBatch.clear();
       _selectedEnglish = null;
       _selectedTurkish = null;
@@ -105,7 +100,7 @@ class _SpeedMatchScreenState extends State<SpeedMatchScreen> {
       }
 
       if (_selectedEnglish != null && _selectedTurkish != null) {
-        final pairMatch = _currentBatchWords.any((w) => w.english == _selectedEnglish && w.turkish == _selectedTurkish);
+        final pairMatch = _currentBatchWords.any((w) => w.word == _selectedEnglish && w.meaning == _selectedTurkish);
         if (pairMatch) {
           _score += 10;
           _matchedPairsBatch.add(_selectedEnglish!);
@@ -134,26 +129,61 @@ class _SpeedMatchScreenState extends State<SpeedMatchScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        title: Text(translation.tr('time_up'), style: const TextStyle(color: Colors.white)),
-        content: Text('${translation.tr('your_score')}: $_score', style: const TextStyle(color: Colors.white70)),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _loadData();
-            },
-            child: Text(translation.tr('try_again'), style: const TextStyle(color: Colors.deepPurpleAccent)),
+      builder: (context) => Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(color: Colors.amber.shade50, shape: BoxShape.circle),
+                child: const Icon(Icons.timer_off_rounded, size: 64, color: Colors.amber),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Time\'s Up!',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.blueGrey.shade900),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Your Score: $_score',
+                style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: const Color(0xFF6366F1)),
+              ),
+              const SizedBox(height: 32),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Navigator.pop(context);
+                      },
+                      child: Text('Close', style: TextStyle(color: Colors.grey.shade500, fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _loadData();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6366F1),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      child: const Text('Try Again', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: Text(translation.tr('close'), style: const TextStyle(color: Colors.white38)),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -164,25 +194,21 @@ class _SpeedMatchScreenState extends State<SpeedMatchScreen> {
     if (_allWords.isEmpty) return _buildEmptyState();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: const Color(0xFFF8F9FE),
       appBar: AppBar(
-        title: Text(translation.tr('speed_match'), style: const TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        title: const Text('Speed Match', style: TextStyle(fontWeight: FontWeight.w900)),
+        centerTitle: true,
         actions: [
           Container(
-            margin: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            margin: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.deepPurple.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.deepPurple.withOpacity(0.3)),
+              color: const Color(0xFF6366F1).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Center(
-              child: Text(
-                '${translation.tr('score')}: $_score',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.deepPurpleAccent),
-              ),
+            child: Text(
+              'Score: $_score',
+              style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF6366F1), fontSize: 13),
             ),
           )
         ],
@@ -190,36 +216,40 @@ class _SpeedMatchScreenState extends State<SpeedMatchScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Row(
                   children: [
-                    Icon(Icons.timer_outlined, color: _timeLeft < 10 ? Colors.redAccent : Colors.orangeAccent, size: 20),
-                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.timer_outlined,
+                      color: _timeLeft < 10 ? const Color(0xFFF43F5E) : const Color(0xFFF59E0B),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(10),
                         child: LinearProgressIndicator(
                           value: _timeLeft / (_allWords.length * 8),
-                          minHeight: 8,
-                          backgroundColor: Colors.white10,
+                          minHeight: 10,
+                          backgroundColor: Colors.grey.shade200,
                           valueColor: AlwaysStoppedAnimation<Color>(
-                            _timeLeft < 10 ? Colors.redAccent : Colors.orangeAccent,
+                            _timeLeft < 10 ? const Color(0xFFF43F5E) : const Color(0xFFF59E0B),
                           ),
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
-                  '$_timeLeft ${translation.tr('seconds_left')}',
+                  '$_timeLeft seconds left',
                   style: TextStyle(
-                    color: _timeLeft < 10 ? Colors.redAccent : Colors.white38,
+                    color: _timeLeft < 10 ? const Color(0xFFF43F5E) : Colors.blueGrey.shade400,
                     fontSize: 12,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ],
@@ -227,12 +257,12 @@ class _SpeedMatchScreenState extends State<SpeedMatchScreen> {
           ),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                   _buildList(_englishList, true),
-                   const SizedBox(width: 12),
-                   _buildList(_turkishList, false),
+                  _buildList(_englishList, true),
+                  const SizedBox(width: 16),
+                  _buildList(_turkishList, false),
                 ],
               ),
             ),
@@ -245,12 +275,13 @@ class _SpeedMatchScreenState extends State<SpeedMatchScreen> {
 
   Widget _buildList(List<String> items, bool isEnglish) {
     return Expanded(
-      child: items.length > 10
+      child: items.length > 8
           ? ListView.builder(
               padding: EdgeInsets.zero,
               itemCount: items.length,
-              itemBuilder: (context, index) => SizedBox(
-                height: 70,
+              itemBuilder: (context, index) => Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                height: 64,
                 child: _buildItem(items[index], isEnglish),
               ),
             )
@@ -275,28 +306,26 @@ class _SpeedMatchScreenState extends State<SpeedMatchScreen> {
             width: double.infinity,
             decoration: BoxDecoration(
               color: isMatched
-                  ? Colors.green.withOpacity(0.05)
+                  ? const Color(0xFF10B981).withOpacity(0.08)
                   : isSelected
-                      ? Colors.deepPurple.withOpacity(0.3)
-                      : Colors.white.withOpacity(0.03),
+                      ? const Color(0xFF6366F1).withOpacity(0.12)
+                      : Colors.white,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: isMatched
-                    ? Colors.green.withOpacity(0.2)
+                    ? const Color(0xFF10B981).withOpacity(0.3)
                     : isSelected
-                        ? Colors.deepPurpleAccent
-                        : Colors.white10,
-                width: isSelected || isMatched ? 2 : 1,
+                        ? const Color(0xFF6366F1)
+                        : Colors.white,
+                width: 2,
               ),
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: Colors.deepPurple.withOpacity(0.2),
-                        blurRadius: 15,
-                        spreadRadius: 2,
-                      )
-                    ]
-                  : [],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Center(
               child: Padding(
@@ -305,13 +334,13 @@ class _SpeedMatchScreenState extends State<SpeedMatchScreen> {
                   item,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
                     color: isMatched
-                        ? Colors.white24
+                        ? const Color(0xFF10B981).withOpacity(0.5)
                         : isSelected
-                            ? Colors.deepPurpleAccent
-                            : Colors.white,
+                            ? const Color(0xFF6366F1)
+                            : Colors.blueGrey.shade800,
                     decoration: isMatched ? TextDecoration.lineThrough : null,
                   ),
                 ),
@@ -325,12 +354,8 @@ class _SpeedMatchScreenState extends State<SpeedMatchScreen> {
 
   Widget _buildEmptyState() {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
-      appBar: AppBar(
-        title: Text(translation.tr('speed_match')),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
+      backgroundColor: const Color(0xFFF8F9FE),
+      appBar: AppBar(title: const Text('Speed Match', style: TextStyle(fontWeight: FontWeight.w900))),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(32.0),
@@ -339,35 +364,27 @@ class _SpeedMatchScreenState extends State<SpeedMatchScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.warning_amber_rounded, size: 80, color: Colors.orangeAccent),
+                decoration: BoxDecoration(color: Colors.amber.shade50, shape: BoxShape.circle),
+                child: const Icon(Icons.warning_amber_rounded, size: 64, color: Colors.amber),
               ),
               const SizedBox(height: 24),
               Text(
-                translation.tr('insufficient_words'),
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                'Insufficient Words',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.blueGrey.shade900),
               ),
               const SizedBox(height: 12),
               Text(
-                translation.tr('need_words_game'),
+                'You need at least 1 word to play Speed Match.',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white54, fontSize: 16),
+                style: TextStyle(color: Colors.blueGrey.shade400, fontSize: 15, fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 40),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  child: Text(translation.tr('back'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text('Go Back', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -376,5 +393,6 @@ class _SpeedMatchScreenState extends State<SpeedMatchScreen> {
       ),
     );
   }
+
 }
 

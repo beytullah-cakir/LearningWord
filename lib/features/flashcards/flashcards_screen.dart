@@ -3,7 +3,7 @@ import 'package:flip_card/flip_card.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import '../../core/database/database_helper.dart';
 import '../../models/word_model.dart';
-import '../../core/localization/app_translation.dart';
+
 
 class FlashcardsScreen extends StatefulWidget {
   const FlashcardsScreen({super.key});
@@ -18,25 +18,20 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
   final PageController _pageController = PageController();
   int _currentIndex = 0;
   bool _isExiting = false;
-  final translation = LanguageManager();
+
 
   @override
   void initState() {
     super.initState();
     _wordsFuture = DatabaseHelper.instance.getAllWords();
     _initTts();
-    translation.addListener(_onLanguageChange);
   }
 
   @override
   void dispose() {
-    translation.removeListener(_onLanguageChange);
     super.dispose();
   }
 
-  void _onLanguageChange() {
-    if (mounted) setState(() {});
-  }
 
   Future<void> _initTts() async {
     await _flutterTts.setLanguage("en-US");
@@ -53,7 +48,7 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FE),
       appBar: AppBar(
-        title: Text(translation.tr('flashcards'), style: const TextStyle(fontWeight: FontWeight.w900)),
+        title: const Text('Flashcards', style: TextStyle(fontWeight: FontWeight.w900)),
         centerTitle: true,
       ),
       body: FutureBuilder<List<Word>>(
@@ -64,7 +59,7 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
           }
 
           if (snapshot.hasError) {
-            return Center(child: Text('${translation.tr('error')}: ${snapshot.error}'));
+            return Center(child: Text('Error: ${snapshot.error}'));
           }
 
           final words = snapshot.data;
@@ -82,13 +77,13 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      translation.tr('no_words'),
+                      'No words added yet.',
                       style: TextStyle(color: Colors.blueGrey.shade900, fontSize: 18, fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 32),
                     ElevatedButton(
                       onPressed: () => Navigator.pop(context),
-                      child: Text(translation.tr('back')),
+                      child: Text('Go Back'),
                     ),
                   ],
                 ),
@@ -107,7 +102,7 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '${translation.tr('progress')}',
+                          'Progress',
                           style: TextStyle(fontWeight: FontWeight.w800, color: Colors.blueGrey.shade400, fontSize: 13),
                         ),
                         Text(
@@ -160,16 +155,16 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
                           direction: FlipDirection.HORIZONTAL,
                           front: _buildCardSide(
                             context,
-                            title: translation.tr('english'),
-                            content: word.english,
+                            title: 'Word',
+                            content: word.word,
                             color: Colors.white,
                             textColor: Colors.blueGrey.shade900,
                             isFront: true,
                           ),
                           back: _buildCardSide(
                             context,
-                            title: translation.tr('turkish'),
-                            content: word.turkish,
+                            title: 'Meaning',
+                            content: word.meaning,
                             color: const Color(0xFF6366F1),
                             textColor: Colors.white,
                             isFront: false,
@@ -271,7 +266,7 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  translation.tr('flip_to_translate'),
+                  'Tap to flip',
                   style: TextStyle(
                     color: isFront ? Colors.blueGrey.shade100 : Colors.white.withOpacity(0.3),
                     fontSize: 13,

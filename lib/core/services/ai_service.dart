@@ -10,18 +10,18 @@ class AiPromptService {
   }
 
   Future<Map<String, String>?> generateSentence({
-    required String englishWord,
+    required String word,
     required String level,
   }) async {
     final prompt = '''
-Sen uzman bir İngilizce öğretmenisin. Öğrencinin seviyesi: $level.
-Lütfen "$englishWord" kelimesini anlamlı ve doğal bir şekilde kullanan, $level seviyesine uygun, günlük hayatta kullanılabilecek örnek bir İngilizce cümle oluştur. 
-Ardından bu cümlenin anlaşılır bir Türkçe çevirisini yap.
+You are an expert language teacher. The student's level is: $level.
+Please create an example sentence that uses the word "$word" in a natural and meaningful context, appropriate for a $level learner.
+Then provide a clear meaning or translation for that sentence.
 
-Yanıtını sadece aşağıdaki JSON formatında ver, başka hiçbir açıklama veya markdown metni (örneğin ```json vb.) ekleme:
+Provide your response ONLY in the following JSON format. Do not add any other explanations or markdown:
 {
-  "sentence": "İngilizce cümle buraya",
-  "translation": "Türkçe çeviri buraya"
+  "sentence": "Example sentence here",
+  "meaning": "Meaning or translation here"
 }
 ''';
 
@@ -30,27 +30,25 @@ Yanıtını sadece aşağıdaki JSON formatında ver, başka hiçbir açıklama 
       final response = await _model.generateContent(content);
       
       if (response.text != null && response.text!.isNotEmpty) {
-        String jsonText = response.text!;
+        String jsonText = response.text!.trim();
         // Remove markdown backticks if Gemini accidentally adds them
         if (jsonText.startsWith('```')) {
-          final lines = jsonText.split('\\n');
-          if (lines.length >= 2) {
-            lines.removeAt(0); // remove ```json
-            if (lines.last.trim() == '```') {
-              lines.removeLast(); // remove closing ```
-            }
-            jsonText = lines.join('\\n');
+          final lines = jsonText.split('\n');
+          if (lines.length >= 0) { // Safety check
+            if (lines.isNotEmpty && lines.first.startsWith('```')) lines.removeAt(0);
+            if (lines.isNotEmpty && lines.last.startsWith('```')) lines.removeLast();
+            jsonText = lines.join('\n');
           }
         }
         
         final Map<String, dynamic> data = jsonDecode(jsonText.trim());
         return {
           'sentence': data['sentence']?.toString() ?? '',
-          'translation': data['translation']?.toString() ?? '',
+          'meaning': data['meaning']?.toString() ?? '',
         };
       }
     } catch (e) {
-      print('AI Service Error: \$e');
+      print('AI Service Error: $e');
       return null;
     }
     return null;

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import '../../core/database/database_helper.dart';
 import '../../models/word_model.dart';
-import '../../core/localization/app_translation.dart';
+
 import 'package:audioplayers/audioplayers.dart';
 
 class SpellingMasteryScreen extends StatefulWidget {
@@ -23,25 +23,20 @@ class _SpellingMasteryScreenState extends State<SpellingMasteryScreen> {
   int _score = 0;
   bool _hasChecked = false;
   bool _isCorrect = false;
-  final translation = LanguageManager();
+
 
   @override
   void initState() {
     super.initState();
     _loadWords();
-    translation.addListener(_onLanguageChange);
   }
 
   @override
   void dispose() {
-    translation.removeListener(_onLanguageChange);
     _audioPlayer.dispose();
     super.dispose();
   }
 
-  void _onLanguageChange() {
-    if (mounted) setState(() {});
-  }
 
   Future<void> _loadWords() async {
     final words = await DatabaseHelper.instance.getAllWords();
@@ -59,7 +54,7 @@ class _SpellingMasteryScreenState extends State<SpellingMasteryScreen> {
   Future<void> _speak() async {
     if (_currentIndex < _words.length) {
       await _flutterTts.setLanguage("en-US");
-      await _flutterTts.speak(_words[_currentIndex].english);
+      await _flutterTts.speak(_words[_currentIndex].word);
     }
   }
 
@@ -67,7 +62,7 @@ class _SpellingMasteryScreenState extends State<SpellingMasteryScreen> {
     if (_hasChecked) return;
     
     final answer = _controller.text.trim().toLowerCase();
-    final correctAnswer = _words[_currentIndex].english.trim().toLowerCase();
+    final correctAnswer = _words[_currentIndex].word.trim().toLowerCase();
 
     setState(() {
       _hasChecked = true;
@@ -103,45 +98,120 @@ class _SpellingMasteryScreenState extends State<SpellingMasteryScreen> {
     final currentWord = _words[_currentIndex];
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
-      appBar: AppBar(title: Text(translation.tr('spelling'))),
-      body: Padding(
+      backgroundColor: const Color(0xFFF8F9FE),
+      appBar: AppBar(
+        title: const Text('Spelling', style: TextStyle(fontWeight: FontWeight.w900)),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            LinearProgressIndicator(
-              value: (_currentIndex + 1) / _words.length,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Progress',
+                  style: TextStyle(fontWeight: FontWeight.w800, color: Colors.blueGrey.shade400, fontSize: 13),
+                ),
+                Text(
+                  '${_currentIndex + 1} / ${_words.length}',
+                  style: const TextStyle(color: Color(0xFF6366F1), fontWeight: FontWeight.w900, fontSize: 13),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ClipRRect(
               borderRadius: BorderRadius.circular(10),
+              child: LinearProgressIndicator(
+                value: (_currentIndex + 1) / _words.length,
+                minHeight: 10,
+                backgroundColor: Colors.grey.shade200,
+                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF6366F1)),
+              ),
             ),
-            const SizedBox(height: 32),
-            Text(
-              translation.tr('write_the_word'),
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white),
+            const SizedBox(height: 48),
+            Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(32),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    'WRITE THE WORD',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.blueGrey.shade200,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2,
+                      fontSize: 10,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    currentWord.meaning,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.blueGrey.shade900,
+                      letterSpacing: -1,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  IconButton(
+                    onPressed: _speak,
+                    icon: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6366F1).withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.volume_up_rounded, size: 32, color: Color(0xFF6366F1)),
+                    ),
+                  ),
+                  Text(
+                    'Tap to listen',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.blueGrey.shade200, fontWeight: FontWeight.w600, fontSize: 12),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              currentWord.turkish,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blueAccent),
-            ),
-            const SizedBox(height: 32),
-            IconButton(
-              onPressed: _speak,
-              icon: const Icon(Icons.volume_up, size: 48, color: Colors.orangeAccent),
-            ),
-            Text(translation.tr('tap_to_listen'), textAlign: TextAlign.center, style: const TextStyle(color: Colors.white38)),
             const SizedBox(height: 32),
             TextField(
               controller: _controller,
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(color: Colors.blueGrey.shade900, fontWeight: FontWeight.w700),
               textCapitalization: TextCapitalization.none,
               autocorrect: false,
               decoration: InputDecoration(
-                hintText: translation.tr('hint_write_english'),
-                hintStyle: const TextStyle(color: Colors.white24),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                hintText: 'Write the word...',
+                hintStyle: TextStyle(color: Colors.blueGrey.shade200, fontWeight: FontWeight.w500),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: BorderSide(color: Colors.grey.shade100),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: BorderSide(color: Colors.grey.shade100),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: const BorderSide(color: Color(0xFF6366F1), width: 2),
+                ),
+                contentPadding: const EdgeInsets.all(20),
               ),
               onSubmitted: (_) => _checkAnswer(),
               enabled: !_hasChecked,
@@ -151,35 +221,43 @@ class _SpellingMasteryScreenState extends State<SpellingMasteryScreen> {
               ElevatedButton(
                 onPressed: _checkAnswer,
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  backgroundColor: Colors.deepPurple,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  backgroundColor: const Color(0xFF6366F1),
                   foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  elevation: 0,
                 ),
-                child: Text(translation.tr('check')),
+                child: const Text('CHECK', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               )
             else ...[
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: _isCorrect
-                      ? Colors.green.withOpacity(0.1)
-                      : Colors.red.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
+                  color: _isCorrect ? const Color(0xFF10B981).withOpacity(0.1) : const Color(0xFFF43F5E).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: _isCorrect ? Colors.green : Colors.red,
+                    color: _isCorrect ? const Color(0xFF10B981) : const Color(0xFFF43F5E),
+                    width: 2,
                   ),
                 ),
-                child: Column(
+                child: Row(
                   children: [
-                    Text(
-                      _isCorrect
-                          ? translation.tr('perfect')
-                          : '${translation.tr('error_correct_answer')} ${currentWord.english}',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: _isCorrect ? Colors.green : Colors.red,
+                    Icon(
+                      _isCorrect ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                      color: _isCorrect ? const Color(0xFF10B981) : const Color(0xFFF43F5E),
+                      size: 28,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        _isCorrect
+                            ? 'Perfect!'
+                            : 'Error! Correct answer: ${currentWord.word}',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          color: _isCorrect ? const Color(0xFF10B981) : const Color(0xFFF43F5E),
+                        ),
                       ),
                     ),
                   ],
@@ -189,12 +267,16 @@ class _SpellingMasteryScreenState extends State<SpellingMasteryScreen> {
               ElevatedButton(
                 onPressed: _nextWord,
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  backgroundColor: const Color(0xFF6366F1),
                   foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  elevation: 0,
                 ),
-                child: Text(_currentIndex < _words.length - 1 ? translation.tr('next') : translation.tr('see_results')),
+                child: Text(
+                  _currentIndex < _words.length - 1 ? 'NEXT' : 'SEE RESULTS',
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ],
@@ -205,46 +287,28 @@ class _SpellingMasteryScreenState extends State<SpellingMasteryScreen> {
 
   Widget _buildEmptyState() {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
-      appBar: AppBar(title: Text(translation.tr('spelling'))),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.warning, size: 64, color: Colors.orange),
-            const SizedBox(height: 16),
-            Text(translation.tr('no_words'), style: const TextStyle(color: Colors.white)),
-            const SizedBox(height: 16),
-            ElevatedButton(onPressed: () => Navigator.pop(context), child: Text(translation.tr('back'))),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildResultState() {
-    return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: const Color(0xFFF8F9FE),
+      appBar: AppBar(title: const Text('Spelling', style: TextStyle(fontWeight: FontWeight.w900))),
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(32.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.stars, size: 80, color: Colors.amber),
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(color: Colors.amber.shade50, shape: BoxShape.circle),
+                child: const Icon(Icons.warning_amber_rounded, size: 64, color: Colors.amber),
+              ),
               const SizedBox(height: 24),
-              Text(translation.tr('congrats'), style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
-              const SizedBox(height: 16),
-              Text('${translation.tr('your_score')}: $_score / ${_words.length}', style: const TextStyle(fontSize: 24, color: Colors.white70)),
-              const SizedBox(height: 48),
+              Text(
+                'No words added yet.',
+                style: TextStyle(color: Colors.blueGrey.shade900, fontSize: 18, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 32),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 56),
-                  backgroundColor: Colors.deepPurple,
-                  foregroundColor: Colors.white,
-                ),
-                child: Text(translation.tr('continue')),
+                child: const Text('Go Back'),
               ),
             ],
           ),
@@ -252,4 +316,50 @@ class _SpellingMasteryScreenState extends State<SpellingMasteryScreen> {
       ),
     );
   }
+
+  Widget _buildResultState() {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FE),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(color: Colors.amber.shade50, shape: BoxShape.circle),
+                child: const Icon(Icons.emoji_events_rounded, size: 80, color: Colors.amber),
+              ),
+              const SizedBox(height: 32),
+              Text(
+                'Congratulations!',
+                style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.blueGrey.shade900, letterSpacing: -1),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Your Score: $_score / ${_words.length}',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: const Color(0xFF6366F1)),
+              ),
+              const SizedBox(height: 48),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    backgroundColor: const Color(0xFF6366F1),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  ),
+                  child: const Text('Continue', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
 }
