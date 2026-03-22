@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'features/onboarding/onboarding_screen.dart';
+import 'features/onboarding/splash_screen.dart';
 import 'features/home/home_screen.dart';
 import 'core/database/database_helper.dart';
 
@@ -26,7 +27,7 @@ class VocabFlowApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'VocabFlow AI',
+      title: 'LearnWords AI',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
@@ -69,7 +70,7 @@ class VocabFlowApp extends StatelessWidget {
           ),
         ),
       ),
-      home: hasCompletedOnboarding ? const HomeScreen() : const OnboardingScreen(),
+      home: SplashScreen(hasCompletedOnboarding: hasCompletedOnboarding),
     );
   }
 }

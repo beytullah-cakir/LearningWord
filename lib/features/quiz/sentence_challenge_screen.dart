@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../core/database/database_helper.dart';
 import '../../models/word_model.dart';
 import '../../core/services/ai_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
