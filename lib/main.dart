@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'features/onboarding/onboarding_screen.dart';
-import 'features/onboarding/splash_screen.dart';
 import 'features/home/home_screen.dart';
 import 'core/database/database_helper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize Hive for all platforms (Web, Windows, Mobile etc.)
   final dbHelper = DatabaseHelper.instance;
   await dbHelper.initHive();
   await dbHelper.seedDatabaseManual();
 
   final prefs = await SharedPreferences.getInstance();
-  final bool hasCompletedOnboarding = prefs.getBool('hasCompletedOnboarding') ?? false;
+  final bool hasCompletedOnboarding =
+      prefs.getBool('hasCompletedOnboarding') ?? false;
 
   runApp(VocabFlowApp(hasCompletedOnboarding: hasCompletedOnboarding));
 }
@@ -66,11 +66,13 @@ class VocabFlowApp extends StatelessWidget {
             foregroundColor: Colors.white,
             elevation: 0,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
           ),
         ),
       ),
-      home: SplashScreen(hasCompletedOnboarding: hasCompletedOnboarding),
+      home: hasCompletedOnboarding ? const HomeScreen() : const OnboardingScreen(),
     );
   }
 }

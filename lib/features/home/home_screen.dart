@@ -238,37 +238,46 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCustomNavBar() {
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
     return Container(
-      margin: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 30,
-            offset: const Offset(0, 10),
-          ),
-        ],
+      padding: EdgeInsets.only(bottom: bottomPadding > 0 ? 0 : 20),
+      decoration: const BoxDecoration(
+        color: Colors.transparent,
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _buildNavItem(
-            0,
-            Icons.school_rounded,
-            Icons.school_rounded,
-            'Exercise',
+      child: SafeArea(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(32),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 30,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
-          _buildActionNavItem(),
-          _buildNavItem(
-            2,
-            Icons.grid_view_rounded,
-            Icons.grid_view_rounded,
-            'Words',
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildNavItem(
+                0,
+                Icons.school_rounded,
+                Icons.school_rounded,
+                'Exercise',
+              ),
+              _buildActionNavItem(),
+              _buildNavItem(
+                2,
+                Icons.grid_view_rounded,
+                Icons.grid_view_rounded,
+                'Words',
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
