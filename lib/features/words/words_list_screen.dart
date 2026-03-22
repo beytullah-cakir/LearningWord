@@ -183,8 +183,13 @@ class _WordsListScreenState extends State<WordsListScreen> {
                           try {
                             final prefs = await SharedPreferences.getInstance();
                             final level = prefs.getString('userLevel') ?? 'B1';
+                            final targetLang = prefs.getString('targetLanguage') ?? 'English';
                             final ai = AiPromptService(apiKey: 'YOUR_GEMINI_API_KEY_HERE');
-                            final res = await ai.generateSentence(word: currentWord.word, level: level);
+                            final res = await ai.generateSentence(
+                              word: currentWord.word, 
+                              level: level,
+                              targetLanguage: targetLang,
+                            );
                             if (res != null) {
                               final updated = currentWord.copyWith(
                                 aiSentence: res['sentence'] ?? '',

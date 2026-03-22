@@ -12,10 +12,12 @@ class AiPromptService {
   Future<Map<String, String>?> generateSentence({
     required String word,
     required String level,
+    String targetLanguage = 'English',
   }) async {
     final prompt = '''
-You are an expert language teacher. The student's level is: $level.
-Please create an example sentence that uses the word "$word" in a natural and meaningful context, appropriate for a $level learner.
+You are an expert language teacher. The student is learning: $targetLanguage.
+The student's level is: $level.
+Please create an example sentence that uses the word "$word" in a natural and meaningful context in $targetLanguage, appropriate for a $level learner.
 Then provide a clear meaning or translation for that sentence.
 
 Provide your response ONLY in the following JSON format. Do not add any other explanations or markdown:
@@ -57,9 +59,10 @@ Provide your response ONLY in the following JSON format. Do not add any other ex
   Future<Map<String, dynamic>?> checkSentence({
     required String word,
     required String userSentence,
+    String targetLanguage = 'English',
   }) async {
     final prompt = '''
-You are a language teacher. A student wrote this sentence using the word "$word":
+You are a language teacher for: $targetLanguage. A student wrote this sentence using the word "$word" in $targetLanguage:
 "$userSentence"
 
 Please check:

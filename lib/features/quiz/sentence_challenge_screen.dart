@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/word_model.dart';
 import '../../core/services/ai_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SentenceChallengeScreen extends StatefulWidget {
   final List<Word> words;
@@ -37,10 +38,13 @@ class _SentenceChallengeScreenState extends State<SentenceChallengeScreen> {
     });
 
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final targetLang = prefs.getString('targetLanguage') ?? 'English';
       final wordObj = widget.words[_currentIndex];
       final result = await _aiService.checkSentence(
         word: wordObj.word,
         userSentence: sentence,
+        targetLanguage: targetLang,
       );
       
       setState(() {

@@ -12,25 +12,26 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPageIndex = 0;
+  
+  String? _selectedLanguage;
   String? _selectedLevel;
+
+  final List<Map<String, String>> _languages = [
+    {'name': 'English', 'icon': '🇺🇸'},
+    {'name': 'German', 'icon': '🇩🇪'},
+    {'name': 'Spanish', 'icon': '🇪🇸'},
+    {'name': 'French', 'icon': '🇫🇷'},
+    {'name': 'Turkish', 'icon': '🇹🇷'},
+    {'name': 'Italian', 'icon': '🇮🇹'},
+  ];
 
   final List<String> _levels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
   void _onNext() {
-    if (_currentPageIndex < 2) {
+    if (_currentPageIndex < 3) {
       _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOutBack,
       );
     } else {
       _completeOnboarding();
@@ -38,21 +39,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _completeOnboarding() async {
-    if (_selectedLevel == null) {
+    if (_selectedLanguage == null || _selectedLevel == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please select an English level.')),
+        const SnackBar(content: Text('Please select both language and level.')),
       );
       return;
     }
 
     final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('targetLanguage', _selectedLanguage!);
     await prefs.setString('userLevel', _selectedLevel!);
     await prefs.setBool('hasCompletedOnboarding', true);
 
     if (!mounted) return;
-    Navigator.of(
-      context,
-    ).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 800),
+        pageBuilder: (context, animation, secondaryAnimation) => const HomeScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
   }
 
   @override
@@ -65,26 +73,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             Expanded(
               child: PageView(
                 controller: _pageController,
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentPageIndex = index;
-                  });
-                },
+                physics: const NeverScrollableScrollPhysics(),
+                onPageChanged: (index) => setState(() => _currentPageIndex = index),
                 children: [
-                  _buildPage(
-                    title: 'Welcome to  AI!',
-                    description:
-                        'Build your own vocabulary, improve your English with AI-powered example sentences.',
-                    icon: Icons.auto_awesome_rounded,
-                    color: const Color(0xFF6366F1),
-                  ),
-                  _buildPage(
-                    title: 'Smart Learning Modes',
-                    description:
-                        'Continue learning words everywhere with flashcards and dynamic tests.',
-                    icon: Icons.school_rounded,
-                    color: const Color(0xFF8B5CF6),
-                  ),
+                  _buildWelcomePage(),
+                  _buildFeaturePage(),
+                  _buildLanguageSelectionPage(),
                   _buildLevelSelectionPage(),
                 ],
               ),
@@ -96,46 +90,85 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  Widget _buildPage({
-    required String title,
-    required String description,
-    required IconData icon,
-    required Color color,
-  }) {
+  Widget _buildWelcomePage() {
+    return _buildBasePage(
+      icon: Icons.auto_awesome_rounded,
+      iconColor: const Color(0xFF6366F1),
+      title: 'Welcome to LearnWords',
+      description: 'Your AI-powered journey to mastering any language starts here. Add your own words and watch them come to life.',
+    );
+  }
+
+  Widget _buildFeaturePage() {
+    return _buildBasePage(
+      icon: Icons.bolt_rounded,
+      iconColor: const Color(0xFFF59E0B),
+      title: 'Smart Learning',
+      description: 'Benefit from tiered reviews, sentence building challenges, and instant AI feedback tailored to your progress.',
+    );
+  }
+
+  Widget _buildLanguageSelectionPage() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40.0),
+      padding: const EdgeInsets.all(32),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            padding: const EdgeInsets.all(40),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.05),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 100, color: color),
-          ),
-          const SizedBox(height: 60),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w900,
-              color: Colors.blueGrey.shade900,
-              letterSpacing: -1,
-            ),
+          const Icon(Icons.language_rounded, size: 80, color: Color(0xFF10B981)),
+          const SizedBox(height: 32),
+          const Text(
+            'What language are you learning?',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Color(0xFF1E293B)),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 24),
-          Text(
-            description,
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.blueGrey.shade400,
-              fontWeight: FontWeight.w500,
-              height: 1.5,
+          const SizedBox(height: 32),
+          Expanded(
+            child: GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 2.5,
+              ),
+              itemCount: _languages.length,
+              itemBuilder: (context, index) {
+                final lang = _languages[index];
+                final isSelected = _selectedLanguage == lang['name'];
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedLanguage = lang['name']),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    decoration: BoxDecoration(
+                      color: isSelected ? const Color(0xFF10B981) : Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isSelected ? const Color(0xFF10B981).withOpacity(0.3) : Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(lang['icon']!, style: const TextStyle(fontSize: 20)),
+                          const SizedBox(width: 8),
+                          Text(
+                            lang['name']!,
+                            style: TextStyle(
+                              color: isSelected ? Colors.white : const Color(0xFF1E293B),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -144,93 +177,97 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Widget _buildLevelSelectionPage() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32.0),
+      padding: const EdgeInsets.all(32),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: const Color(0xFF6366F1).withOpacity(0.05),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.language_rounded,
-              size: 60,
-              color: Color(0xFF6366F1),
-            ),
-          ),
-          const SizedBox(height: 40),
-          Text(
-            'Select Your English Level',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w900,
-              color: Colors.blueGrey.shade900,
-              letterSpacing: -1,
-            ),
+          const Icon(Icons.trending_up_rounded, size: 80, color: Color(0xFF6366F1)),
+          const SizedBox(height: 32),
+          const Text(
+            'What is your current level?',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Color(0xFF1E293B)),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Text(
-            'It is important for us to generate suitable example sentences for you.',
-            style: TextStyle(
-              fontSize: 15,
-              color: Colors.blueGrey.shade400,
-              fontWeight: FontWeight.w500,
-            ),
+            'This helps the AI create sentences that match your skills.',
+            style: TextStyle(fontSize: 14, color: Colors.blueGrey.shade400, fontWeight: FontWeight.w500),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 48),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _levels.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.2,
-            ),
-            itemBuilder: (context, index) {
-              final level = _levels[index];
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            alignment: WrapAlignment.center,
+            children: _levels.map((level) {
               final isSelected = _selectedLevel == level;
               return GestureDetector(
                 onTap: () => setState(() => _selectedLevel = level),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
+                  width: 80,
+                  height: 80,
                   decoration: BoxDecoration(
                     color: isSelected ? const Color(0xFF6366F1) : Colors.white,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
-                        color: isSelected
-                            ? const Color(0xFF6366F1).withOpacity(0.3)
-                            : Colors.black.withOpacity(0.03),
-                        blurRadius: 15,
-                        offset: const Offset(0, 8),
+                        color: isSelected ? const Color(0xFF6366F1).withOpacity(0.3) : Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
                       ),
                     ],
-                    border: Border.all(
-                      color: isSelected
-                          ? const Color(0xFF6366F1)
-                          : Colors.grey.shade100,
-                    ),
                   ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    level,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: isSelected
-                          ? Colors.white
-                          : Colors.blueGrey.shade700,
+                  child: Center(
+                    child: Text(
+                      level,
+                      style: TextStyle(
+                        fontSize: 24,
+                        color: isSelected ? Colors.white : const Color(0xFF1E293B),
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
                 ),
               );
-            },
+            }).toList(),
+          ),
+          const SizedBox(height: 48),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBasePage({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String description,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.all(48),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 80, color: iconColor),
+          ),
+          const SizedBox(height: 64),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: Color(0xFF1E293B), letterSpacing: -1),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          Text(
+            description,
+            style: TextStyle(fontSize: 18, color: Colors.blueGrey.shade400, height: 1.5, fontWeight: FontWeight.w500),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -239,49 +276,34 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Widget _buildBottomControls() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 48),
+      padding: const EdgeInsets.fromLTRB(32, 0, 32, 48),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
-            children: List.generate(3, (index) {
-              final isActive = _currentPageIndex == index;
+            children: List.generate(4, (index) {
               return AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 margin: const EdgeInsets.only(right: 8),
-                width: isActive ? 24 : 10,
-                height: 10,
+                height: 8,
+                width: _currentPageIndex == index ? 24 : 8,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(5),
-                  color: isActive
-                      ? const Color(0xFF6366F1)
-                      : Colors.blueGrey.shade100,
+                  color: _currentPageIndex == index ? const Color(0xFF6366F1) : Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(4),
                 ),
               );
             }),
           ),
           ElevatedButton(
-            onPressed: () {
-              if (_currentPageIndex == 2 && _selectedLevel == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Please select a level to continue.'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-                return;
-              }
-              _onNext();
-            },
+            onPressed: _onNext,
             style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-              backgroundColor: const Color(0xFF6366F1),
-              shadowColor: const Color(0xFF6366F1).withOpacity(0.4),
-              elevation: 4,
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+              backgroundColor: const Color(0xFF1E293B),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             ),
             child: Text(
-              _currentPageIndex == 2 ? 'Start' : 'Next',
-              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+              _currentPageIndex == 3 ? 'GET STARTED' : 'NEXT',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
             ),
           ),
         ],
