@@ -23,7 +23,9 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
   @override
   void initState() {
     super.initState();
-    _wordsFuture = DatabaseHelper.instance.getAllWords();
+    _wordsFuture = DatabaseHelper.instance.getAllWords().then((list) {
+      return List<Word>.from(list)..sort((a, b) => a.levelScore.compareTo(b.levelScore));
+    });
     _initTts();
   }
 
@@ -175,10 +177,74 @@ class _FlashcardsScreenState extends State<FlashcardsScreen> {
                   ),
                 ),
               ),
+              _buildNavigationButtons(words.length),
               const SizedBox(height: 48),
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildNavigationButtons(int total) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 48),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildNavButton(
+            icon: Icons.arrow_back_ios_new_rounded,
+            isVisible: _currentIndex > 0,
+            onPressed: () {
+              _pageController.previousPage(
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeOutQuart,
+              );
+            },
+          ),
+          _buildNavButton(
+            icon: Icons.arrow_forward_ios_rounded,
+            isVisible: _currentIndex < total - 1,
+            onPressed: () {
+              _pageController.nextPage(
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeOutQuart,
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavButton({
+    required IconData icon,
+    required bool isVisible,
+    required VoidCallback onPressed,
+  }) {
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 200),
+      opacity: isVisible ? 1.0 : 0.0,
+      child: IgnorePointer(
+        ignoring: !isVisible,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF6366F1).withOpacity(0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: IconButton(
+            onPressed: onPressed,
+            padding: const EdgeInsets.all(16),
+            icon: Icon(icon, color: const Color(0xFF6366F1), size: 28),
+          ),
+        ),
       ),
     );
   }

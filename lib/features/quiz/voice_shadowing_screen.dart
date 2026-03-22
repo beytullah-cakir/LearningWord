@@ -7,7 +7,8 @@ import '../../models/word_model.dart';
 import 'package:audioplayers/audioplayers.dart';
 
 class VoiceShadowingScreen extends StatefulWidget {
-  const VoiceShadowingScreen({super.key});
+  final List<Word>? customWords;
+  const VoiceShadowingScreen({super.key, this.customWords});
 
   @override
   State<VoiceShadowingScreen> createState() => _VoiceShadowingScreenState();
@@ -42,10 +43,14 @@ class _VoiceShadowingScreenState extends State<VoiceShadowingScreen> {
 
 
   Future<void> _loadWords() async {
-    final words = await DatabaseHelper.instance.getAllWords();
+    final words = widget.customWords ?? await DatabaseHelper.instance.getAllWords();
     if (words.isNotEmpty) {
+      // Sort by levelScore (lowest first)
+      final sortedWords = List<Word>.from(words)..sort((a, b) => a.levelScore.compareTo(b.levelScore));
       setState(() {
-        _words = (words..shuffle()).take(10).toList();
+        // Take the 20 lowest score words and shuffle them to pick 10
+        final pool = sortedWords.take(20).toList()..shuffle();
+        _words = pool.take(10).toList();
         _isLoading = false;
       });
     } else {
@@ -91,6 +96,11 @@ class _VoiceShadowingScreenState extends State<VoiceShadowingScreen> {
       setState(() {
         _lastFeedback = "Great! You pronounced it correctly. (Score: ${(_confidence * 100).toInt()})";
         _audioPlayer.play(AssetSource('sounds/success.mp3'));
+        // Increment levelScore
+        final currentWord = _words[_currentIndex];
+        DatabaseHelper.instance.updateWord(currentWord.copyWith(
+          levelScore: currentWord.levelScore + 1,
+        ));
       });
     } else if (recognized.isEmpty) {
       setState(() {

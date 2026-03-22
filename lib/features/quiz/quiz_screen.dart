@@ -6,7 +6,8 @@ import '../../models/word_model.dart';
 import 'package:audioplayers/audioplayers.dart';
 
 class QuizScreen extends StatefulWidget {
-  const QuizScreen({super.key});
+  final List<Word>? customWords;
+  const QuizScreen({super.key, this.customWords});
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
@@ -37,7 +38,7 @@ class _QuizScreenState extends State<QuizScreen> {
 
 
   Future<void> _loadQuiz() async {
-    final allWords = await DatabaseHelper.instance.getAllWords();
+    final allWords = widget.customWords ?? await DatabaseHelper.instance.getAllWords();
     if (allWords.length < 4) {
       if (mounted) {
         setState(() {
@@ -48,9 +49,11 @@ class _QuizScreenState extends State<QuizScreen> {
       return;
     }
 
-    // Shuffle and pick 10 words (or all if less than 10)
-    final shuffled = List<Word>.from(allWords)..shuffle();
-    _questions = shuffled.take(10).toList();
+    // Sort by levelScore (lowest first) and then pick words
+    final sortedWords = List<Word>.from(allWords)..sort((a, b) => a.levelScore.compareTo(b.levelScore));
+    // Take the 15 lowest score words and shuffle them to pick 10
+    final pool = sortedWords.take(20).toList()..shuffle();
+    _questions = pool.take(10).toList();
     
     _generateOptions(allWords);
     
@@ -86,9 +89,14 @@ class _QuizScreenState extends State<QuizScreen> {
     setState(() {
       _answered = true;
       _selectedOptionIndex = index;
-      if (_currentOptions[index] == _questions[_currentQuestionIndex].meaning) {
+      final currentWord = _questions[_currentQuestionIndex];
+      if (_currentOptions[index] == currentWord.meaning) {
         _score++;
         _audioPlayer.play(AssetSource('sounds/success.mp3'));
+        // Increment levelScore
+        DatabaseHelper.instance.updateWord(currentWord.copyWith(
+          levelScore: currentWord.levelScore + 1,
+        ));
       } else {
         _audioPlayer.play(AssetSource('sounds/fail.mp3'));
       }

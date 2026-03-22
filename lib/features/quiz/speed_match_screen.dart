@@ -6,7 +6,8 @@ import '../../models/word_model.dart';
 import 'package:audioplayers/audioplayers.dart';
 
 class SpeedMatchScreen extends StatefulWidget {
-  const SpeedMatchScreen({super.key});
+  final List<Word>? customWords;
+  const SpeedMatchScreen({super.key, this.customWords});
 
   @override
   State<SpeedMatchScreen> createState() => _SpeedMatchScreenState();
@@ -44,10 +45,14 @@ class _SpeedMatchScreenState extends State<SpeedMatchScreen> {
 
 
   Future<void> _loadData() async {
-    final words = await DatabaseHelper.instance.getAllWords();
+    final words = widget.customWords ?? await DatabaseHelper.instance.getAllWords();
     if (words.isNotEmpty) {
       setState(() {
-        _allWords = words..shuffle();
+        // Sort by levelScore (lowest first)
+        final sortedWords = List<Word>.from(words)..sort((a, b) => a.levelScore.compareTo(b.levelScore));
+        // Take the 30 lowest score words and shuffle them to pick the set to play
+        final pool = sortedWords.take(30).toList()..shuffle();
+        _allWords = pool;
         _timeLeft = _allWords.length * 8; // Total time for all words
         _currentBatchIndex = 0;
         _score = 0;
@@ -106,6 +111,16 @@ class _SpeedMatchScreenState extends State<SpeedMatchScreen> {
           _matchedPairsBatch.add(_selectedEnglish!);
           _matchedPairsBatch.add(_selectedTurkish!);
           _audioPlayer.play(AssetSource('sounds/success.mp3'));
+          
+          // Find the word that was matched and increment its levelScore
+          try {
+            final matchedWord = _currentBatchWords.firstWhere((w) => w.word == _selectedEnglish && w.meaning == _selectedTurkish);
+            DatabaseHelper.instance.updateWord(matchedWord.copyWith(
+              levelScore: matchedWord.levelScore + 1,
+            ));
+          } catch (e) {
+            // Word not found in current batch (shouldn't happen)
+          }
           
           if (_matchedPairsBatch.length == _currentBatchWords.length * 2) {
             // Batch completed

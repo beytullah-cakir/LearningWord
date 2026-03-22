@@ -53,4 +53,49 @@ Provide your response ONLY in the following JSON format. Do not add any other ex
     }
     return null;
   }
+
+  Future<Map<String, dynamic>?> checkSentence({
+    required String word,
+    required String userSentence,
+  }) async {
+    final prompt = '''
+You are a language teacher. A student wrote this sentence using the word "$word":
+"$userSentence"
+
+Please check:
+1. Is the word "$word" used correctly (grammatically and contextually)?
+2. Is the sentence generally correct?
+
+Provide your response ONLY in the following JSON format:
+{
+  "isCorrect": true,
+  "feedback": "Your short feedback here"
+}
+''';
+
+    try {
+      final content = [Content.text(prompt)];
+      final response = await _model.generateContent(content);
+      
+      if (response.text != null && response.text!.isNotEmpty) {
+        String jsonText = response.text!.trim();
+        if (jsonText.startsWith('```')) {
+          final lines = jsonText.split('\n');
+          if (lines.isNotEmpty && lines.first.startsWith('```')) lines.removeAt(0);
+          if (lines.isNotEmpty && lines.last.startsWith('```')) lines.removeLast();
+          jsonText = lines.join('\n');
+        }
+        
+        final Map<String, dynamic> data = jsonDecode(jsonText.trim());
+        return {
+          'isCorrect': data['isCorrect'] as bool? ?? false,
+          'feedback': data['feedback']?.toString() ?? 'No feedback provided.',
+        };
+      }
+    } catch (e) {
+      print('AI Sentence Check Error: $e');
+      return null;
+    }
+    return null;
+  }
 }

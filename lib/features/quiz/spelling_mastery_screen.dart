@@ -6,7 +6,8 @@ import '../../models/word_model.dart';
 import 'package:audioplayers/audioplayers.dart';
 
 class SpellingMasteryScreen extends StatefulWidget {
-  const SpellingMasteryScreen({super.key});
+  final List<Word>? customWords;
+  const SpellingMasteryScreen({super.key, this.customWords});
 
   @override
   State<SpellingMasteryScreen> createState() => _SpellingMasteryScreenState();
@@ -39,11 +40,14 @@ class _SpellingMasteryScreenState extends State<SpellingMasteryScreen> {
 
 
   Future<void> _loadWords() async {
-    final words = await DatabaseHelper.instance.getAllWords();
+    final words = widget.customWords ?? await DatabaseHelper.instance.getAllWords();
     if (words.isNotEmpty) {
-      words.shuffle();
+      // Sort by levelScore (lowest first)
+      final sortedWords = List<Word>.from(words)..sort((a, b) => a.levelScore.compareTo(b.levelScore));
       setState(() {
-        _words = words.take(10).toList();
+        // Take the 20 lowest score words and shuffle them to pick 10
+        final pool = sortedWords.take(20).toList()..shuffle();
+        _words = pool.take(10).toList();
         _isLoading = false;
       });
     } else {
@@ -70,6 +74,11 @@ class _SpellingMasteryScreenState extends State<SpellingMasteryScreen> {
       if (_isCorrect) {
         _score++;
         _audioPlayer.play(AssetSource('sounds/success.mp3'));
+        // Increment levelScore
+        final currentWord = _words[_currentIndex];
+        DatabaseHelper.instance.updateWord(currentWord.copyWith(
+          levelScore: currentWord.levelScore + 1,
+        ));
       } else {
         _audioPlayer.play(AssetSource('sounds/fail.mp3'));
       }
